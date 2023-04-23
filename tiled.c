@@ -1,17 +1,19 @@
 #include <raylib.h>
+#include <wctype.h>
 
 #define SCREEN_W 1280
 #define SCREEN_H 720
 
-#define MAP_W 4
+#define MAP_W 8
 #define MAP_H 4
 
 const int tilemap[MAP_H][MAP_W] = {
-    {0, 0, 0, 0},
-    {0, 0, 3, 3},
-    {3, 3, 1, 1},
-    {1, 1, 2, 2}
+    {0, 0, 0, 0, 0, 0, 3, 3},
+    {0, 3, 3, 0, 0, 3, 1, 1},
+    {3, 1, 1, 3, 3, 1, 2, 2},
+    {1, 2, 2, 1, 1, 2, 4, 4}
 };
+const int atlasSize[2] = {2, 2};
 
 
 int main() {
@@ -26,14 +28,13 @@ int main() {
     float zoom = 1.0f;
     Texture atlas = LoadTexture("tiles.png");
     // size of the tile atlas grid in tiles
-    int atlasSize[2] = {2, 2};
 
     int resolutionLoc = GetShaderLocation(shader, "resolution");
     int locationLoc = GetShaderLocation(shader, "offset");
     int zoomLoc = GetShaderLocation(shader, "zoom");
     int atlasSizeLoc = GetShaderLocation(shader, "atlasSize");
 
-    int tilemapLoc[MAP_W][MAP_H]= {};
+    int tilemapLoc[MAP_H][MAP_W]= {};
     for (int x = 0; x < MAP_W; x++) {
     for (int y = 0; y < MAP_H; y++) {
         tilemapLoc[y][x] = GetShaderLocation(shader, TextFormat("tilemap[%d][%d]", y, x));

@@ -25,7 +25,7 @@ int main() {
 
     float resolution[2] = {SCREEN_W, SCREEN_H};
     float offset[2] = {0, 0};
-    float zoom = 1.0f;
+    float zoom = 16.0f;
     Texture atlas = LoadTexture("tiles.png");
     int resolutionLoc = GetShaderLocation(shader, "resolution");
     int locationLoc = GetShaderLocation(shader, "offset");

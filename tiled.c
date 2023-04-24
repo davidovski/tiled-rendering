@@ -4,17 +4,17 @@
 #define SCREEN_W 1280
 #define SCREEN_H 720
 
-#define MAP_W 8
+#define MAP_W 16
 #define MAP_H 4
 
 const int tilemap[MAP_H][MAP_W] = {
-    {0, 0, 0, 0, 0, 0, 3, 3},
-    {0, 3, 3, 0, 0, 3, 1, 1},
-    {3, 1, 1, 3, 3, 1, 2, 2},
-    {1, 2, 2, 1, 1, 2, 4, 4}
-};
-const int atlasSize[2] = {2, 2};
+    {0, 0, 0, 0, 0, 0, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0,},
+    {0, 3, 3, 0, 0, 3, 1, 1, 1, 3, 0, 0, 0, 0, 0, 0,},
+    {3, 1, 1, 3, 3, 1, 2, 2, 2, 1, 3, 3, 3, 0, 0, 3,},
+    {1, 2, 2, 1, 1, 2, 4, 4, 4, 2, 1, 1, 1, 3, 3, 1,}
+};                          
 
+const int atlasSize[2] = {2, 2};
 
 int main() {
     InitWindow(SCREEN_W, SCREEN_H, "tiled");
@@ -27,20 +27,18 @@ int main() {
     float offset[2] = {0, 0};
     float zoom = 1.0f;
     Texture atlas = LoadTexture("tiles.png");
-    // size of the tile atlas grid in tiles
-
     int resolutionLoc = GetShaderLocation(shader, "resolution");
     int locationLoc = GetShaderLocation(shader, "offset");
     int zoomLoc = GetShaderLocation(shader, "zoom");
     int atlasSizeLoc = GetShaderLocation(shader, "atlasSize");
 
-    int tilemapLoc[MAP_H][MAP_W]= {};
+    int tilemapLoc[MAP_H][MAP_W] = {};
     for (int x = 0; x < MAP_W; x++) {
-    for (int y = 0; y < MAP_H; y++) {
-        tilemapLoc[y][x] = GetShaderLocation(shader, TextFormat("tilemap[%d][%d]", y, x));
+      for (int y = 0; y < MAP_H; y++) {
+        tilemapLoc[y][x] =
+            GetShaderLocation(shader, TextFormat("tilemap[%d][%d]", y, x));
+      }
     }
-    }
-
 
     int textureLoc = GetShaderLocation(shader, "texture1");
 
@@ -77,6 +75,8 @@ int main() {
             // draw the base image to texture0
             DrawTexture(target.texture, 0, 0, WHITE);
         EndShaderMode();
+
+            DrawText(TextFormat("FPS: %d", GetFPS()), 12, 12, 24, DARKGRAY);
 
         EndDrawing();
     }

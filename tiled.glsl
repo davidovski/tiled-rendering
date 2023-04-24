@@ -1,4 +1,7 @@
 #version 430
+
+#define MAP_H 4
+#define MAP_W 16
 precision highp float;
 
 in vec3 vertexPos;
@@ -12,11 +15,18 @@ uniform vec2 resolution;
 uniform vec2 offset;
 uniform float zoom;
 uniform ivec2 atlasSize;
-uniform int tilemap[4][8];
+uniform int tilemap[MAP_H][MAP_W];
 
 out vec4 finalColor;
 
 const vec4 none = vec4(0.0f, 0.0f, 0.0f, 0.0f);
+
+bool inBounds(vec2 coords, vec2 area) {
+    return coords.x > area.x
+        || coords.x < 0
+        || coords.y > area.y
+        || coords.y < 0;
+}
 
 ivec2 calcTileOffset(int tileIndex) {
     tileIndex -= 1;
@@ -25,18 +35,14 @@ ivec2 calcTileOffset(int tileIndex) {
     return ivec2(x, y);
 }
 
-vec4 tile(vec2 coords, int tileIndex, vec2 tileSize) {
-
-    if (tileIndex == 0
-        || coords.x > tileSize.x
-        || coords.x < 0
-        || coords.y > tileSize.y
-        || coords.y < 0) {
+vec4 tile(vec2 coords, int tileIndex) {
+    if (
+        tileIndex == 0
+        || inBounds(coords, vec2(1, 1))) {
         return none;
     } else {
         ivec2 tileOffset = calcTileOffset(tileIndex);
-        vec2 texCoords = coords + (tileOffset*tileSize);
-        texCoords /= tileSize;
+        vec2 texCoords = coords + (tileOffset);
         texCoords /= atlasSize;
 
         return texture(texture1, texCoords);
@@ -45,25 +51,20 @@ vec4 tile(vec2 coords, int tileIndex, vec2 tileSize) {
 
 void main() {
     ivec2 texSize = textureSize(texture1, 1);
-    vec2 tileSize = texSize / atlasSize;
 
-    vec2 uv = fragTexCoord * tileSize;
+    vec2 uv = fragTexCoord;
     uv.x *= resolution.x / resolution.y;
 
     uv *= zoom;
     uv -= offset;
 
     // get position in tiled world wow
-    ivec2 tilemapPos = ivec2(floor(uv.x / tileSize.x), floor(uv.y / tileSize.y));
+    ivec2 tilemapPos = ivec2(floor(uv));
 
-    if (uv.x < 0
-    || uv.y < 0
-    || uv.x > 8*tileSize.x
-    || uv.y > 8*tileSize.y) {
-
+    if (inBounds(uv, vec2(MAP_W, MAP_H))) {
         finalColor = none;
     } else {
-        vec2 position = mod(uv,tileSize);
-        finalColor = tile(position, tilemap[tilemapPos.y][tilemapPos.x], tileSize);
+        vec2 position = mod(uv, 1);
+        finalColor = tile(position, tilemap[tilemapPos.y][tilemapPos.x]);
     }
 }

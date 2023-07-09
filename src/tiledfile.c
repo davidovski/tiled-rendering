@@ -31,20 +31,23 @@ Texture2D processTilemapTexture(int * tilelayout, int width, int height) {
     return checked;
 }
 
-// read a big endian bytes from file
+//! read a big endian bytes from file
 int readb(char *out, size_t noBytes, FILE *file) {
-    int s = fread(out, (size_t)1, (size_t) noBytes, file);
-    
-    if (!is_bigendian()) {
-        int tmp;
-        // reverse byte order
-        for(int i = 0; i < noBytes/2; i++) {
-            tmp = out[i];
-            out[i] = out[noBytes-i-1];
-            out[noBytes-i-1] = tmp;
-        }
+    if (!fread(out, (size_t)1, (size_t) noBytes, file))
+        return 1;
+
+    if (is_bigendian()) 
+        return 0;
+
+    int tmp;
+    // reverse byte order
+    for(int i = 0; i < noBytes/2; i++) {
+        tmp = out[i];
+        out[i] = out[noBytes-i-1];
+        out[noBytes-i-1] = tmp;
     }
-    return s;
+
+    return 0;
 }
 
 

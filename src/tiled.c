@@ -15,7 +15,7 @@ int main() {
 
     Texture2D tilemap = loadTileMap("map.tiles");
 
-    Texture atlas = LoadTexture("tiled.png");
+    Texture atlas = LoadTexture("atlas.png");
     RenderTexture2D target = LoadRenderTexture(SCREEN_W, SCREEN_H);
 
     float resolution[2] = {SCREEN_W, SCREEN_H};

@@ -6,8 +6,8 @@ FLAGS=-lm -lraylib
 install: tiled
 	cp tiled ${PREFIX}/bin/
 
-build: tiled.c tiledfile.c tiledfile.h
-	${CC} tiled.c tiledfile.c -o tiled ${FLAGS} 
+build: src/*.c src/*.h
+	${CC} src/*.c -o tiled ${FLAGS} 
 
 clean: tiled
 	rm tiled

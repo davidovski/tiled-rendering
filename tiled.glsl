@@ -10,12 +10,12 @@ in vec4 fragColor;
 
 uniform sampler2D texture0;
 uniform sampler2D texture1;
+uniform sampler2D texture2;
 
 uniform vec2 resolution;
 uniform vec2 offset;
 uniform float zoom;
 uniform ivec2 atlasSize;
-uniform int tilemap[MAP_H][MAP_W];
 
 out vec4 finalColor;
 
@@ -65,6 +65,7 @@ void main() {
         finalColor = none;
     } else {
         vec2 position = mod(uv, 1);
-        finalColor = tile(position, tilemap[tilemapPos.y][tilemapPos.x]);
+        int tileIndex = int(256*texelFetch(texture2, tilemapPos, 0).r);
+        finalColor = tile(position, tileIndex);
     }
 }

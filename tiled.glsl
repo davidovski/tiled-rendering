@@ -1,7 +1,5 @@
 #version 430
 
-#define MAP_H 4
-#define MAP_W 16
 precision highp float;
 
 in vec3 vertexPos;
@@ -16,6 +14,7 @@ uniform vec2 resolution;
 uniform vec2 offset;
 uniform float zoom;
 uniform ivec2 atlasSize;
+uniform ivec2 mapSize;
 
 out vec4 finalColor;
 
@@ -61,7 +60,7 @@ void main() {
     // get position in tiled world wow
     ivec2 tilemapPos = ivec2(floor(uv));
 
-    if (inBounds(uv, vec2(MAP_W, MAP_H))) {
+    if (inBounds(uv, mapSize)) {
         finalColor = none;
     } else {
         vec2 position = mod(uv, 1);

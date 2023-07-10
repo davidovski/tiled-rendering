@@ -6,7 +6,6 @@
 #define SCREEN_W 1280
 #define SCREEN_H 720
 
-
 int main() {
     InitWindow(SCREEN_W, SCREEN_H, "tiled");
 
@@ -14,7 +13,10 @@ int main() {
 
     int atlasSize[2] = {0, 0};
     Texture2D tilemap, atlas; 
-    loadTileMap("map.tiles", &tilemap, &atlas, atlasSize);
+
+    if (loadTileMap("map.tiles", &tilemap, &atlas, atlasSize)) {
+        return 1;
+    }
 
     RenderTexture2D target = LoadRenderTexture(SCREEN_W, SCREEN_H);
 

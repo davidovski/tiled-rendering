@@ -18,7 +18,7 @@ void textureFromPixels(Texture2D *loc, Color *pixels, int width, int height) {
     UnloadImage(checkedIm);
 }
 
-void processTilemapTexture(Texture2D *loc, int * tilelayout, int width, int height) {
+void processTilemapTexture(Texture2D *loc, char * tilelayout, int width, int height) {
     Color *pixels = (Color*) malloc(width * height * sizeof(Color));
 
     for (int i = 0; i < width*height; i++) {
@@ -56,13 +56,17 @@ int readb(char * out, size_t noBytes, FILE * file) {
 }
 
 //! load tilemap data from file
-void loadTileMap(char * filename, Texture2D * tilemap, Texture2D * atlas, int * atlasSize) {
+int loadTileMap(char * filename, Texture2D * tilemap, Texture2D * atlas, int * atlasSize) {
     int width, height, tilebytes, tilesize, atlasWidth, atlasHeight;
-    int * tilelayout;
+    char * tilelayout;
 
     FILE * file;
 
-    file = fopen(filename, "rb");
+    if (!(file = fopen(filename, "rb"))) {
+        fprintf(stderr, "Failed to load %s\n", filename);
+        return 1;
+    }
+
     // skip header 
     fseek(file, 10, SEEK_CUR);
     // 4 bytes for int width
@@ -72,7 +76,6 @@ void loadTileMap(char * filename, Texture2D * tilemap, Texture2D * atlas, int * 
     // 4 bytes saying how big each tile is
     readb((char *)&tilebytes, 4, file);
 
-    fprintf(stderr, "loading %d bytes per tile for %d (%dx%d) tiles\n", tilebytes, width*height, width, height);
     tilelayout = malloc(width*height*tilebytes);
     fread(tilelayout, tilebytes, width*height, file);
 
@@ -89,5 +92,6 @@ void loadTileMap(char * filename, Texture2D * tilemap, Texture2D * atlas, int * 
 
     // read the atlas itself
     readrgba(atlas, atlasWidth * tilesize, atlasHeight * tilesize, file);
-    fprintf(stderr, "Successfully loaded tilemap from %s\n", filename);
+    fclose(file);
+    return 0;
 }

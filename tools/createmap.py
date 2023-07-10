@@ -9,7 +9,7 @@ ATLASFILE = "atlas.png"
 
 TILESIZE = 16
 WIDTH = 2**10
-HEIGHT = 2**11
+HEIGHT = 2**10
 
 # create atlas bytes
 image = Image.open(ATLASFILE).convert("RGBA")

@@ -1,5 +1,5 @@
 CC=gcc
-FLAGS=-lm -lraylib
+FLAGS=-lm -lraylib -ggdb
 
 .DEFAULT_GOAL := build
 

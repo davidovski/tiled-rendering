@@ -7,10 +7,9 @@ in vec2 fragTexCoord;
 in vec4 fragColor;
 
 uniform sampler2D texture0;
-uniform sampler2D texture1;
-uniform sampler2D texture2;
+uniform sampler2D atlasTexture;
+uniform sampler2D tilemapTexture;
 
-uniform vec2 resolution;
 uniform vec2 offset;
 uniform float zoom;
 uniform ivec2 atlasSize;
@@ -44,17 +43,16 @@ vec4 tile(vec2 coords, int tileIndex) {
         vec2 texCoords = coords + (tileOffset);
         texCoords /= atlasSize;
 
-        return texture(texture1, texCoords);
+        return texture(atlasTexture, texCoords);
     }
 }
 
 void main() {
-    ivec2 texSize = textureSize(texture1, 1);
+    ivec2 res = textureSize(texture0, 1);
 
     vec2 uv = fragTexCoord;
-    uv.x *= resolution.x / resolution.y;
 
-    uv *= zoom;
+    uv /= zoom;
     uv -= offset;
 
     // get position in tiled world wow
@@ -64,7 +62,7 @@ void main() {
         finalColor = none;
     } else {
         vec2 position = mod(uv, 1);
-        int tileIndex = int(256*texelFetch(texture2, tilemapPos, 0).r);
+        int tileIndex = int(256*texelFetch(tilemapTexture, tilemapPos, 0).r);
         finalColor = tile(position, tileIndex);
     }
 }

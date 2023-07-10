@@ -8,8 +8,8 @@ outfile = "map.tiles"
 ATLASFILE = "atlas.png"
 
 TILESIZE = 16
-WIDTH = 1024
-HEIGHT = 1024
+WIDTH = 2**10
+HEIGHT = 2**11
 
 # create atlas bytes
 image = Image.open(ATLASFILE).convert("RGBA")

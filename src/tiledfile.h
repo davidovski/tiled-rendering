@@ -1,3 +1,3 @@
 #include <raylib.h>
 
-Texture2D loadTileMap(char *filename);
+void loadTileMap(char * filename, Texture2D * tilemap, Texture2D * atlas, int * atlasSize);

@@ -6,16 +6,16 @@
 #define SCREEN_W 1280
 #define SCREEN_H 720
 
-const int atlasSize[2] = {2, 2};
 
 int main() {
     InitWindow(SCREEN_W, SCREEN_H, "tiled");
 
     Shader shader = LoadShader(0, "tiled.glsl");
 
-    Texture2D tilemap = loadTileMap("map.tiles");
+    int atlasSize[2] = {0, 0};
+    Texture2D tilemap, atlas; 
+    loadTileMap("map.tiles", &tilemap, &atlas, atlasSize);
 
-    Texture atlas = LoadTexture("atlas.png");
     RenderTexture2D target = LoadRenderTexture(SCREEN_W, SCREEN_H);
 
     float resolution[2] = {SCREEN_W, SCREEN_H};

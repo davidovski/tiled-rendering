@@ -18,7 +18,7 @@ uniform ivec2 mapSize;
 out vec4 finalColor;
 
 const vec4 none = vec4(0.0f, 0.0f, 0.0f, 0.0f);
-const vec4 gridColor = vec4(0.0f, 0.0f, 0.0f, 0.2f);
+const vec4 gridColor = vec4(0.0f, 0.0f, 0.0f, 0.05f);
 
 bool outBounds(vec2 coords, vec2 area) {
     return coords.x > area.x
@@ -35,8 +35,8 @@ ivec2 calcTileOffset(int tileIndex) {
 }
 
 vec4 drawGrid(vec2 coords) {
-    if (abs(floor(coords.x) - coords.x) < 1/16 
-     || abs(floor(coords.y) - coords.y) < 1/16) {
+    if (abs(floor(coords.x) - coords.x) < 1/16.0f 
+     || abs(floor(coords.y) - coords.y) < 1/16.0f) {
         return gridColor;
     } else {
         return none;

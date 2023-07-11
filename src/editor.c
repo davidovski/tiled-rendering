@@ -24,12 +24,16 @@ void drawOverlay(Tiled tiled) {
             }, tiled.zoom/16, GREEN);
 }
 
-void modifyTile(Tiled *tiled, int x) {
-    int tile = getTiledMapTile(tiled->tiledMap, selectedTile);
-    int tileCount = tiled->tiledMap.atlasSize[0] * tiled->tiledMap.atlasSize[1] + 1;
-    tile = (tile + x) % (tileCount);
-    setTiledMapTile(tiled->tiledMap, selectedTile, tile);
-    renderTilemapTexture(&tiled->tilemapTexture, tiled->tiledMap);
+void modifyTile(Tiled *tiled, int i) {
+    if (selectedTile[0] >= 0 && selectedTile[0] < tiled->tiledMap.width
+        && selectedTile[1] >= 0 && selectedTile[1] < tiled->tiledMap.height) {
+        printf("%d,%d", selectedTile[0], selectedTile[1]);
+        int tile = getTiledMapTile(tiled->tiledMap, selectedTile);
+        int tileCount = tiled->tiledMap.atlasSize[0] * tiled->tiledMap.atlasSize[1] + 1;
+        tile = (tile + i) % (tileCount);
+        setTiledMapTile(tiled->tiledMap, selectedTile, tile);
+        renderTilemapTexture(&tiled->tilemapTexture, tiled->tiledMap);
+    }
 }
 
 int launchEditor(TiledMap tiledMap) {

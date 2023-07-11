@@ -50,8 +50,8 @@ Tiled initTiled(TiledMap tiledMap) {
     tiled.tiledMap = tiledMap;
     tiled.offset = (Vector2) {0, 0};
     tiled.zoom = 64;
-    tiled.mapSize[0] = tiled.tilemapTexture.width;
-    tiled.mapSize[1] = tiled.tilemapTexture.height;
+    tiled.mapSize[0] = tiled.tiledMap.width;
+    tiled.mapSize[1] = tiled.tiledMap.height;
     tiled.targetTexture = LoadRenderTexture(1, 1);
 
     tiled.atlasSize[0] = tiledMap.atlasSize[0];

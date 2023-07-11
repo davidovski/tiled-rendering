@@ -20,17 +20,6 @@ void textureFromPixels(Texture2D *texOut, Color *pixels, int width, int height) 
     UnloadImage(checkedIm);
 }
 
-void renderTilemapTexture(Texture2D *texOut, TiledMap tiledMap) {
-    Color *pixels = (Color*) malloc(tiledMap.width * tiledMap.height * sizeof(Color));
-
-    for (int i = 0; i < tiledMap.width*tiledMap.height; i++) {
-        pixels[i] = (Color){ tiledMap.tilelayout[i], 0, 0, 0 };
-    }
-
-    textureFromPixels(texOut, pixels, tiledMap.width, tiledMap.height);
-}
-
-
 //! read rgba image from file
 void readrgba(Texture2D *loc, int width, int height, FILE *file) {
     Color *pixels = malloc(width*height*4);

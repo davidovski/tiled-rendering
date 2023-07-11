@@ -45,14 +45,34 @@ Vector2 translateTiledScreenPosition(Tiled tiled, Vector2 tiledPos) {
     };
 }
 
+void redrawTiledMap(Tiled tiled) {
+    BeginTextureMode(tiled.tilemapTexture);
+    for (int y = 0; y < tiled.tiledMap.height; y++) {
+        for (int x = 0; x < tiled.tiledMap.width; x++) {
+            int i = (tiled.tiledMap.height - y - 1)*tiled.tiledMap.width + x;
+            Color c = (Color){ 
+                tiled.tiledMap.tilelayout[i], 
+                0, 0, 255 
+            };
+            DrawPixel(x, y, c);
+        }
+    }
+    EndTextureMode();
+
+}
+
+
 Tiled initTiled(TiledMap tiledMap) {
     Tiled tiled;
     tiled.tiledMap = tiledMap;
+
     tiled.offset = (Vector2) {0, 0};
     tiled.zoom = 64;
-    tiled.mapSize[0] = tiled.tiledMap.width;
-    tiled.mapSize[1] = tiled.tiledMap.height;
+
+    tiled.mapSize[0] = tiledMap.width;
+    tiled.mapSize[1] = tiledMap.height;
     tiled.targetTexture = LoadRenderTexture(1, 1);
+    tiled.tilemapTexture = LoadRenderTexture(tiledMap.width, tiledMap.width);
 
     tiled.atlasSize[0] = tiledMap.atlasSize[0];
     tiled.atlasSize[1] = tiledMap.atlasSize[1];
@@ -63,7 +83,7 @@ Tiled initTiled(TiledMap tiledMap) {
             tiledMap.atlasSize[1] * tiledMap.tileSize);
 
 
-    renderTilemapTexture(&tiled.tilemapTexture, tiled.tiledMap);
+    redrawTiledMap(tiled);
     initTiledShader(&tiled);
     return tiled;
 }
@@ -73,20 +93,20 @@ void setTiledShaderUniforms(Tiled tiled) {
     SetShaderValue(tiled.shader, tiled.zoomLoc, &tiled.zoom, SHADER_UNIFORM_FLOAT);
 
     SetShaderValue(tiled.shader, tiled.atlasSizeLoc, &tiled.atlasSize, SHADER_UNIFORM_IVEC2);
-    SetShaderValue(tiled.shader, tiled.mapSizeLoc, &tiled.tilemapTexture.width, SHADER_UNIFORM_IVEC2);
+    SetShaderValue(tiled.shader, tiled.mapSizeLoc, &tiled.mapSize, SHADER_UNIFORM_IVEC2);
 
     SetShaderValueTexture(tiled.shader, tiled.atlasTextureLoc, tiled.atlasTexture);
-    SetShaderValueTexture(tiled.shader, tiled.tilemapTextureLoc, tiled.tilemapTexture);
+    SetShaderValueTexture(tiled.shader, tiled.tilemapTextureLoc, tiled.tilemapTexture.texture);
 }
 
 void unloadTiled(Tiled *tiled) {
     UnloadShader(tiled->shader);
     UnloadTexture(tiled->atlasTexture);
-    UnloadTexture(tiled->tilemapTexture);
+    UnloadRenderTexture(tiled->tilemapTexture);
     UnloadRenderTexture(tiled->targetTexture);
 }
-
 void drawTiled(Tiled *tiled) {
+    //renderTiledMapTexture(tiled->tiledMap, tiled->tilemapTexture);
     BeginShaderMode(tiled->shader);
     setTiledShaderUniforms(*tiled);
 
@@ -95,6 +115,10 @@ void drawTiled(Tiled *tiled) {
             (Vector2){0, 0},
             WHITE);
     EndShaderMode();
+    //DrawTextureRec(tiled->tilemapTexture.texture,
+            //(Rectangle){0, 0, GetScreenWidth(), GetScreenHeight()},
+            //(Vector2){0, 0},
+            //WHITE);
 }
 
 int launchTiledView() {

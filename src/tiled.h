@@ -14,8 +14,8 @@ typedef struct Tiled {
     int mapSize[2];
 
     Texture2D atlasTexture;
-    Texture2D tilemapTexture;
 
+    RenderTexture2D tilemapTexture;
     RenderTexture2D targetTexture;
     Shader shader; 
 
@@ -36,3 +36,5 @@ Vector2 translateTiledScreenPosition(Tiled tiled, Vector2 tiledPos);
 Tiled initTiled(TiledMap tiledMap);
 void drawTiled(Tiled *tiled);
 void unloadTiled(Tiled *tiled);
+void redrawTiledMap(Tiled tiled);
+

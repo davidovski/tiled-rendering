@@ -9,6 +9,9 @@ install: tiled
 build: src/*.c src/*.h
 	${CC} src/*.c -o tiled ${FLAGS} 
 
+editor: src/*.c src/editor.c
+	${CC} src/*.c -o editor ${FLAGS}
+
 clean: tiled
 	rm tiled
 

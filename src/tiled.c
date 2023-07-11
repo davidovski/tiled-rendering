@@ -3,9 +3,6 @@
 
 #include "tiled.h"
 
-#define SCREEN_W 1280
-#define SCREEN_H 720
-
 void updateCamera(Vector2 *offset, float *zoom) {
     if (IsKeyDown(KEY_UP)) offset->y += 16.0f / *zoom;
     if (IsKeyDown(KEY_DOWN)) offset->y -=  16.0f/ *zoom;
@@ -16,8 +13,8 @@ void updateCamera(Vector2 *offset, float *zoom) {
     if (IsKeyDown(KEY_S)) *zoom -= *zoom * 0.01f;
 }
 
-void drawOverlay() {
-    DrawText(TextFormat("FPS: %d", GetFPS()), 12, 12, 24, DARKGRAY);
+void updateTiledCamera(Tiled *tiled) {
+    updateCamera(&tiled->offset, &tiled->zoom);
 }
 
 
@@ -34,24 +31,41 @@ void initTiledShader(Tiled *tiled) {
     tiled->tilemapTextureLoc = GetShaderLocation(tiled->shader, "tilemapTexture");
 }
 
-void initTiled(Tiled *tiled, TiledMap tiledMap) {
-    tiled->offset = (Vector2) {0, 0};
-    tiled->zoom = 64;
-    tiled->mapSize[0] = tiled->tilemapTexture.width;
-    tiled->mapSize[1] = tiled->tilemapTexture.height;
-    tiled->targetTexture = LoadRenderTexture(1, 1);
+Vector2 translateTiledPosition(Tiled tiled, Vector2 screenPos) {
+    return (Vector2) {
+        screenPos.x / tiled.zoom - tiled.offset.x,
+        screenPos.y / tiled.zoom - tiled.offset.y
+    };
+}
 
-    tiled->atlasSize[0] = tiledMap.atlasSize[0];
-    tiled->atlasSize[1] = tiledMap.atlasSize[1];
+Vector2 translateTiledScreenPosition(Tiled tiled, Vector2 tiledPos) {
+    return (Vector2) {
+        (tiledPos.x + tiled.offset.x) * tiled.zoom,
+        (tiledPos.y + tiled.offset.y) * tiled.zoom
+    };
+}
 
-    textureFromPixels(&tiled->atlasTexture,
+Tiled initTiled(TiledMap tiledMap) {
+    Tiled tiled;
+    tiled.tiledMap = tiledMap;
+    tiled.offset = (Vector2) {0, 0};
+    tiled.zoom = 64;
+    tiled.mapSize[0] = tiled.tilemapTexture.width;
+    tiled.mapSize[1] = tiled.tilemapTexture.height;
+    tiled.targetTexture = LoadRenderTexture(1, 1);
+
+    tiled.atlasSize[0] = tiledMap.atlasSize[0];
+    tiled.atlasSize[1] = tiledMap.atlasSize[1];
+
+    textureFromPixels(&tiled.atlasTexture,
             tiledMap.atlasData,
             tiledMap.atlasSize[0] * tiledMap.tileSize,
             tiledMap.atlasSize[1] * tiledMap.tileSize);
 
-    renderTilemapTexture(&tiled->tilemapTexture, tiledMap);
 
-    initTiledShader(tiled);
+    renderTilemapTexture(&tiled.tilemapTexture, tiled.tiledMap);
+    initTiledShader(&tiled);
+    return tiled;
 }
 
 void setTiledShaderUniforms(Tiled tiled) {
@@ -73,8 +87,6 @@ void unloadTiled(Tiled *tiled) {
 }
 
 void drawTiled(Tiled *tiled) {
-    updateCamera(&tiled->offset, &tiled->zoom);
-
     BeginShaderMode(tiled->shader);
     setTiledShaderUniforms(*tiled);
 
@@ -85,24 +97,22 @@ void drawTiled(Tiled *tiled) {
     EndShaderMode();
 }
 
-int main() {
+int launchTiledView() {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(SCREEN_W, SCREEN_H, "tiled");
 
-    Tiled tiled;
     TiledMap tiledMap = loadTiledMap("map.tiles");
-    initTiled(&tiled, tiledMap);
-
-
+    Tiled tiled = initTiled(tiledMap);
 
     while (!WindowShouldClose()) {
+        updateTiledCamera(&tiled);
 
         BeginDrawing();
 
         ClearBackground(LIGHTGRAY);
 
         drawTiled(&tiled);
-        drawOverlay();
+        DrawFPS(16, 16);
 
         EndDrawing();
     }

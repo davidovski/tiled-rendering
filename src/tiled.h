@@ -2,7 +2,11 @@
 
 #include "tiledfile.h"
 
+#define SCREEN_W 1280
+#define SCREEN_H 720
+
 typedef struct Tiled {
+    TiledMap tiledMap;
     float zoom;
     Vector2 offset;
 
@@ -26,6 +30,9 @@ typedef struct Tiled {
 
 } Tiled;
 
-void initTiled(Tiled *tiled, TiledMap tiledMap);
+void updateTiledCamera(Tiled *tiled);
+Vector2 translateTiledPosition(Tiled tiled, Vector2 screenPos);
+Vector2 translateTiledScreenPosition(Tiled tiled, Vector2 tiledPos);
+Tiled initTiled(TiledMap tiledMap);
 void drawTiled(Tiled *tiled);
 void unloadTiled(Tiled *tiled);

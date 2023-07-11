@@ -13,4 +13,8 @@ void textureFromPixels(Texture2D *texOut, Color *pixels, int width, int height);
 
 void renderTilemapTexture(Texture2D *texOut, TiledMap tiledMap);
 
+void setTiledMapTile(TiledMap tiledMap, int pos[2], char tile);
+
+char getTiledMapTile(TiledMap tiledMap, int pos[2]);
+
 TiledMap loadTiledMap(char * filename);

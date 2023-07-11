@@ -30,6 +30,7 @@ void renderTilemapTexture(Texture2D *texOut, TiledMap tiledMap) {
     textureFromPixels(texOut, pixels, tiledMap.width, tiledMap.height);
 }
 
+
 //! read rgba image from file
 void readrgba(Texture2D *loc, int width, int height, FILE *file) {
     Color *pixels = malloc(width*height*4);
@@ -55,6 +56,14 @@ int readb(char * out, size_t noBytes, FILE * file) {
     }
 
     return 0;
+}
+
+char getTiledMapTile(TiledMap tiledMap, int pos[2]) {
+    return tiledMap.tilelayout[pos[1]*tiledMap.width + pos[0]];
+}
+
+void setTiledMapTile(TiledMap tiledMap, int pos[2], char tile) {
+    tiledMap.tilelayout[pos[1]*tiledMap.width + pos[0]] = tile;
 }
 
 //! load tilemap data from file

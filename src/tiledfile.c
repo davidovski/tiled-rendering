@@ -59,37 +59,38 @@ int readb(char * out, size_t noBytes, FILE * file) {
 
 //! load tilemap data from file
 TiledMap loadTiledMap(char * filename) {
-    TiledMap tiledmap;
+    TiledMap tiledMap;
     FILE * file;
 
     if (!(file = fopen(filename, "rb"))) {
         fprintf(stderr, "Failed to load %s\n", filename);
-        return tiledmap;
+        return tiledMap;
     }
 
     // skip header 
     fseek(file, 10, SEEK_CUR);
     // 4 bytes for int width
-    readb((char *)&tiledmap.width, 4, file);
+    readb((char *)&tiledMap.width, 4, file);
     // 4 bytes for int height
-    readb((char *)&tiledmap.height, 4, file);
+    readb((char *)&tiledMap.height, 4, file);
 
-    size_t layoutSize = tiledmap.width*tiledmap.height;
-    tiledmap.tilelayout = malloc(layoutSize);
-    fread(tiledmap.tilelayout, layoutSize, 1, file);
+    size_t layoutSize = tiledMap.width*tiledMap.height;
+    tiledMap.tilelayout = malloc(layoutSize);
+    fread(tiledMap.tilelayout, layoutSize, 1, file);
 
     // read the pixel size of each tile
-    readb((char *)&tiledmap.tilesize, 4, file);
+    readb((char *)&tiledMap.tileSize, 4, file);
 
     // read the atlas size
-    readb((char *)&tiledmap.atlasSize[0], 4, file);
-    readb((char *)&tiledmap.atlasSize[1], 4, file);
+    readb((char *)&tiledMap.atlasSize[0], 4, file);
+    readb((char *)&tiledMap.atlasSize[1], 4, file);
 
     // read the atlas itself
-    size_t atlasSizeBytes = tiledmap.atlasSize[0]*tiledmap.tilesize*tiledmap.atlasSize[1]*tiledmap.tilesize*4;
-    tiledmap.atlasData = malloc(atlasSizeBytes);
-    fread(tiledmap.atlasData, atlasSizeBytes, (size_t) 1, file);
+    size_t atlasSizeBytes = tiledMap.atlasSize[0]*tiledMap.tileSize*tiledMap.atlasSize[1]*tiledMap.tileSize*4;
+    tiledMap.atlasData = malloc(atlasSizeBytes);
+    fread(tiledMap.atlasData, atlasSizeBytes, (size_t) 1, file);
 
     fclose(file);
-    return tiledmap;
+    return tiledMap;
 }
+

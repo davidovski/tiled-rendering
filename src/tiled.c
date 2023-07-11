@@ -46,8 +46,8 @@ void initTiled(Tiled *tiled, TiledMap tiledMap) {
 
     textureFromPixels(&tiled->atlasTexture,
             tiledMap.atlasData,
-            tiledMap.atlasSize[0] * tiledMap.tilesize,
-            tiledMap.atlasSize[1] * tiledMap.tilesize);
+            tiledMap.atlasSize[0] * tiledMap.tileSize,
+            tiledMap.atlasSize[1] * tiledMap.tileSize);
 
     renderTilemapTexture(&tiled->tilemapTexture, tiledMap);
 

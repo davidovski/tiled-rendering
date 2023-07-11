@@ -4,7 +4,7 @@ typedef struct TiledMap {
     int width;
     int height;
     char * tilelayout;
-    int tilesize;
+    int tileSize;
     int atlasSize[2];
     Color * atlasData;
 } TiledMap;

@@ -1,6 +1,7 @@
 #include <raylib.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "tiledfile.h"
 
@@ -17,7 +18,6 @@ void textureFromPixels(Texture2D *texOut, Color *pixels, int width, int height) 
     };
 
     *texOut = LoadTextureFromImage(checkedIm);
-    UnloadImage(checkedIm);
 }
 
 //! read rgba image from file
@@ -27,6 +27,23 @@ void readrgba(Texture2D *loc, int width, int height, FILE *file) {
     textureFromPixels(loc, pixels, width, height);
 }
 
+
+
+//! write a big endian bytes from file
+int writeb(char * in, size_t noBytes, FILE * file) {
+    if (!is_bigendian()) {
+        int tmp;
+        // reverse byte order
+        for(int i = 0; i < noBytes/2; i++) {
+            tmp = in[i];
+            in[i] = in[noBytes-i-1];
+            in[noBytes-i-1] = tmp;
+        }
+        
+    }
+
+    return fwrite(in, (size_t)1, (size_t) noBytes, file);
+}
 
 //! read a big endian bytes from file
 int readb(char * out, size_t noBytes, FILE * file) {
@@ -88,7 +105,35 @@ TiledMap loadTiledMap(char * filename) {
     tiledMap.atlasData = malloc(atlasSizeBytes);
     fread(tiledMap.atlasData, atlasSizeBytes, (size_t) 1, file);
 
+    tiledMap.tileCount = tiledMap.atlasSize[0]*tiledMap.atlasSize[1] + 1;
+
     fclose(file);
     return tiledMap;
 }
 
+void saveTiledMap(char * filename, TiledMap tiledMap) {
+    FILE * file;
+
+    if (!(file = fopen(filename, "wb"))) {
+        fprintf(stderr, "Failed to load %s\n", filename);
+        return;
+    }
+    size_t layoutSize = tiledMap.width*tiledMap.height;
+    size_t atlasSizeBytes = tiledMap.atlasSize[0]*tiledMap.tileSize*tiledMap.atlasSize[1]*tiledMap.tileSize*4;
+
+    fwrite("TILEFILEv2", 10, 1, file);
+
+    writeb((char *) &tiledMap.width, 4, file);
+    writeb((char *) &tiledMap.height, 4, file);
+    
+    fwrite(tiledMap.tilelayout, 1, layoutSize, file);
+
+    writeb((char *) &tiledMap.tileSize, 4, file);
+    writeb((char *) &tiledMap.atlasSize[0], 4, file);
+    writeb((char *) &tiledMap.atlasSize[1], 4, file);
+
+    fwrite(tiledMap.atlasData, 1, atlasSizeBytes, file);
+
+    fclose(file);
+    fprintf(stderr, "Written tiledfiled to %s\n", filename);
+}

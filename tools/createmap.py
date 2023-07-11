@@ -8,8 +8,8 @@ outfile = "map.tiles"
 ATLASFILE = "atlas.png"
 
 TILESIZE = 16
-WIDTH = 2**10
-HEIGHT = 2**10
+WIDTH = 64
+HEIGHT = 64
 
 # create atlas bytes
 image = Image.open(ATLASFILE).convert("RGBA")
@@ -40,7 +40,7 @@ with open(outfile, "wb") as file:
 
     for y in range(HEIGHT):
         for x in range(WIDTH):
-            index = (x + y) % 5
+            index = 0;
             file.write(index.to_bytes(tilebytes, 'big'));
 
     file.write(TILESIZE.to_bytes(4, 'big'));

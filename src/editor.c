@@ -1,6 +1,7 @@
 #include <raylib.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "tiled.h"
 
@@ -94,8 +95,47 @@ TiledMap launchEditor(TiledMap tiledMap) {
     return tiled.tiledMap;
 }
 
-int main() {
-    TiledMap tiledMap = loadTiledMap("map.tiles");
+void printUsage(char *progname) {
+    fprintf(stderr, "%s [-h] [-t tile_size] [-s map_size] [-a atlas.png]\n", progname);
+    exit(1);
+}
+
+int main(int argc, char *argv[]) {
+    char * tiledFilePath;
+    const char * atlasFilePath = NULL;
+    int tileSize = 16;
+    int mapSize = 16;
+
+    int flags, opt;
+    while ((opt = getopt(argc, argv, "s:a:h")) != -1) {
+        switch (opt) {
+            case 's':
+                mapSize = atoi(optarg);
+            case 't':
+                tileSize = atoi(optarg);
+            case 'a':
+                atlasFilePath = optarg;
+        }
+    }
+    
+    if (optind >= argc)
+        printUsage(argv[0]);
+
+    tiledFilePath = argv[optind];
+
+    TiledMap tiledMap;
+    if (access(tiledFilePath, F_OK)) {
+        if (atlasFilePath == NULL) {
+            fprintf(stderr, "Atlas file must be specified!\n");
+            printUsage(argv[0]);
+        }
+
+        Image atlasImage = LoadImage(atlasFilePath);
+        tiledMap = newTiledMap(atlasImage, tileSize, mapSize, mapSize);
+    } else {
+        tiledMap = loadTiledMap(tiledFilePath);
+    }
+
     TiledMap editedTiledMap = launchEditor(tiledMap);
-    saveTiledMap("map.tiles", tiledMap);
+    saveTiledMap(tiledFilePath, tiledMap);
 }

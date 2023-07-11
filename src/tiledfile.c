@@ -2,10 +2,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "tiledfile.h"
+
 const int i = 1;
 #define is_bigendian() ( (*(char*)&i) == 0 )
 
-void textureFromPixels(Texture2D *loc, Color *pixels, int width, int height) {
+void textureFromPixels(Texture2D *texOut, Color *pixels, int width, int height) {
     Image checkedIm = {
         .data = pixels,
         .width = width,
@@ -14,18 +16,18 @@ void textureFromPixels(Texture2D *loc, Color *pixels, int width, int height) {
         .mipmaps = 1
     };
 
-    *loc = LoadTextureFromImage(checkedIm);
+    *texOut = LoadTextureFromImage(checkedIm);
     UnloadImage(checkedIm);
 }
 
-void processTilemapTexture(Texture2D *loc, char * tilelayout, int width, int height) {
-    Color *pixels = (Color*) malloc(width * height * sizeof(Color));
+void renderTilemapTexture(Texture2D *texOut, TiledMap tiledMap) {
+    Color *pixels = (Color*) malloc(tiledMap.width * tiledMap.height * sizeof(Color));
 
-    for (int i = 0; i < width*height; i++) {
-        pixels[i] = (Color){ tilelayout[i], 0, 0, 0 };
+    for (int i = 0; i < tiledMap.width*tiledMap.height; i++) {
+        pixels[i] = (Color){ tiledMap.tilelayout[i], 0, 0, 0 };
     }
 
-    textureFromPixels(loc, pixels, width, height);
+    textureFromPixels(texOut, pixels, tiledMap.width, tiledMap.height);
 }
 
 //! read rgba image from file
@@ -56,42 +58,38 @@ int readb(char * out, size_t noBytes, FILE * file) {
 }
 
 //! load tilemap data from file
-int loadTileMap(char * filename, Texture2D * tilemap, Texture2D * atlas, int * atlasSize) {
-    int width, height, tilebytes, tilesize, atlasWidth, atlasHeight;
-    char * tilelayout;
-
+TiledMap loadTiledMap(char * filename) {
+    TiledMap tiledmap;
     FILE * file;
 
     if (!(file = fopen(filename, "rb"))) {
         fprintf(stderr, "Failed to load %s\n", filename);
-        return 1;
+        return tiledmap;
     }
 
     // skip header 
     fseek(file, 10, SEEK_CUR);
     // 4 bytes for int width
-    readb((char *)&width, 4, file);
+    readb((char *)&tiledmap.width, 4, file);
     // 4 bytes for int height
-    readb((char *)&height, 4, file);
-    // 4 bytes saying how big each tile is
-    readb((char *)&tilebytes, 4, file);
+    readb((char *)&tiledmap.height, 4, file);
 
-    tilelayout = malloc(width*height*tilebytes);
-    fread(tilelayout, tilebytes, width*height, file);
-
-    // create a texture from the tilelayout data
-    processTilemapTexture(tilemap, tilelayout, width, height);
+    size_t layoutSize = tiledmap.width*tiledmap.height;
+    tiledmap.tilelayout = malloc(layoutSize);
+    fread(tiledmap.tilelayout, layoutSize, 1, file);
 
     // read the pixel size of each tile
-    readb((char *)&tilesize, 4, file);
+    readb((char *)&tiledmap.tilesize, 4, file);
+
     // read the atlas size
-    readb((char *)&atlasWidth, 4, file);
-    readb((char *)&atlasHeight, 4, file);
-    atlasSize[0] = atlasWidth;
-    atlasSize[1] = atlasHeight;
+    readb((char *)&tiledmap.atlasSize[0], 4, file);
+    readb((char *)&tiledmap.atlasSize[1], 4, file);
 
     // read the atlas itself
-    readrgba(atlas, atlasWidth * tilesize, atlasHeight * tilesize, file);
+    size_t atlasSizeBytes = tiledmap.atlasSize[0]*tiledmap.tilesize*tiledmap.atlasSize[1]*tiledmap.tilesize*4;
+    tiledmap.atlasData = malloc(atlasSizeBytes);
+    fread(tiledmap.atlasData, atlasSizeBytes, (size_t) 1, file);
+
     fclose(file);
-    return 0;
+    return tiledmap;
 }

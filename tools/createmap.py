@@ -35,7 +35,7 @@ with open(outfile, "wb") as file:
     file.write(bytes(HEADER, "ascii"))
     file.write(WIDTH.to_bytes(4, 'big'));
     file.write(HEIGHT.to_bytes(4, 'big'));
-    file.write(tilebytes.to_bytes(4, 'big'));
+    #file.write(tilebytes.to_bytes(4, 'big'));
 
 
     for y in range(HEIGHT):

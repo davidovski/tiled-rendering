@@ -1,7 +1,6 @@
 #include <raylib.h>
 #include <stdio.h>
 
-#include "tiledfile.h"
 #include "tiled.h"
 
 #define SCREEN_W 1280
@@ -21,80 +20,94 @@ void drawOverlay() {
     DrawText(TextFormat("FPS: %d", GetFPS()), 12, 12, 24, DARKGRAY);
 }
 
-Shader initTiledShader(TiledUniforms *uniforms) {
-    Shader shader = LoadShader(0, "tiled.glsl");
 
-    uniforms->offsetLoc = GetShaderLocation(shader, "offset");
-    uniforms->zoomLoc = GetShaderLocation(shader, "zoom");
+void initTiledShader(Tiled *tiled) {
+    tiled->shader = LoadShader(0, "tiled.glsl");
 
-    uniforms->atlasSizeLoc = GetShaderLocation(shader, "atlasSize");
-    uniforms->mapSizeLoc = GetShaderLocation(shader, "mapSize");
+    tiled->offsetLoc = GetShaderLocation(tiled->shader, "offset");
+    tiled->zoomLoc = GetShaderLocation(tiled->shader, "zoom");
 
-    uniforms->atlasTextureLoc = GetShaderLocation(shader, "atlasTexture");
-    uniforms->tilemapTextureLoc = GetShaderLocation(shader, "tilemapTexture");
+    tiled->atlasSizeLoc = GetShaderLocation(tiled->shader, "atlasSize");
+    tiled->mapSizeLoc = GetShaderLocation(tiled->shader, "mapSize");
 
-    return shader;
+    tiled->atlasTextureLoc = GetShaderLocation(tiled->shader, "atlasTexture");
+    tiled->tilemapTextureLoc = GetShaderLocation(tiled->shader, "tilemapTexture");
 }
 
-void setTiledShaderUniforms(Shader shader, TiledUniforms uniforms) {
-    SetShaderValue(shader, uniforms.offsetLoc, &uniforms.offset, SHADER_UNIFORM_VEC2);
-    SetShaderValue(shader, uniforms.zoomLoc, &uniforms.zoom, SHADER_UNIFORM_FLOAT);
+void initTiled(Tiled *tiled, TiledMap tiledMap) {
+    tiled->offset = (Vector2) {0, 0};
+    tiled->zoom = 64;
+    tiled->mapSize[0] = tiled->tilemapTexture.width;
+    tiled->mapSize[1] = tiled->tilemapTexture.height;
+    tiled->targetTexture = LoadRenderTexture(1, 1);
 
-    SetShaderValue(shader, uniforms.atlasSizeLoc, &uniforms.atlasSize, SHADER_UNIFORM_IVEC2);
-    SetShaderValue(shader, uniforms.mapSizeLoc, &uniforms.tilemapTexture.width, SHADER_UNIFORM_IVEC2);
+    tiled->atlasSize[0] = tiledMap.atlasSize[0];
+    tiled->atlasSize[1] = tiledMap.atlasSize[1];
 
+    textureFromPixels(&tiled->atlasTexture,
+            tiledMap.atlasData,
+            tiledMap.atlasSize[0] * tiledMap.tilesize,
+            tiledMap.atlasSize[1] * tiledMap.tilesize);
 
-    SetShaderValueTexture(shader, uniforms.atlasTextureLoc, uniforms.atlasTexture);
-    SetShaderValueTexture(shader, uniforms.tilemapTextureLoc, uniforms.tilemapTexture);
+    renderTilemapTexture(&tiled->tilemapTexture, tiledMap);
+
+    initTiledShader(tiled);
 }
 
-void unloadTiledShader(Shader shader, TiledUniforms uniforms) {
-    UnloadShader(shader);
-    UnloadTexture(uniforms.atlasTexture);
-    UnloadTexture(uniforms.tilemapTexture);
+void setTiledShaderUniforms(Tiled tiled) {
+    SetShaderValue(tiled.shader, tiled.offsetLoc, &tiled.offset, SHADER_UNIFORM_VEC2);
+    SetShaderValue(tiled.shader, tiled.zoomLoc, &tiled.zoom, SHADER_UNIFORM_FLOAT);
 
+    SetShaderValue(tiled.shader, tiled.atlasSizeLoc, &tiled.atlasSize, SHADER_UNIFORM_IVEC2);
+    SetShaderValue(tiled.shader, tiled.mapSizeLoc, &tiled.tilemapTexture.width, SHADER_UNIFORM_IVEC2);
+
+    SetShaderValueTexture(tiled.shader, tiled.atlasTextureLoc, tiled.atlasTexture);
+    SetShaderValueTexture(tiled.shader, tiled.tilemapTextureLoc, tiled.tilemapTexture);
+}
+
+void unloadTiled(Tiled *tiled) {
+    UnloadShader(tiled->shader);
+    UnloadTexture(tiled->atlasTexture);
+    UnloadTexture(tiled->tilemapTexture);
+    UnloadRenderTexture(tiled->targetTexture);
+}
+
+void drawTiled(Tiled *tiled) {
+    updateCamera(&tiled->offset, &tiled->zoom);
+
+    BeginShaderMode(tiled->shader);
+    setTiledShaderUniforms(*tiled);
+
+    DrawTextureRec(tiled->targetTexture.texture,
+            (Rectangle){0, 0, GetScreenWidth(), GetScreenHeight()},
+            (Vector2){0, 0},
+            WHITE);
+    EndShaderMode();
 }
 
 int main() {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(SCREEN_W, SCREEN_H, "tiled");
 
-    TiledUniforms uniforms;
-    if (loadTileMap("map.tiles", &uniforms.tilemapTexture, &uniforms.atlasTexture, uniforms.atlasSize))
-        return 1;
+    Tiled tiled;
+    TiledMap tiledMap = loadTiledMap("map.tiles");
+    initTiled(&tiled, tiledMap);
 
-    uniforms.offset = (Vector2) {0, 0};
-    uniforms.zoom = 64;
-    uniforms.mapSize[0] = uniforms.tilemapTexture.width;
-    uniforms.mapSize[1] = uniforms.tilemapTexture.height;
-
-    RenderTexture2D target = LoadRenderTexture(1, 1);
-    Shader shader = initTiledShader(&uniforms);
 
 
     while (!WindowShouldClose()) {
-        updateCamera(&uniforms.offset, &uniforms.zoom);
 
         BeginDrawing();
 
         ClearBackground(LIGHTGRAY);
 
-        BeginShaderMode(shader);
-            setTiledShaderUniforms(shader, uniforms);
-
-            DrawTextureRec(target.texture,
-                    (Rectangle){0, 0, GetScreenWidth(), GetScreenHeight()},
-                    (Vector2){0, 0},
-                    WHITE);
-        EndShaderMode();
-
+        drawTiled(&tiled);
         drawOverlay();
 
         EndDrawing();
     }
 
-    UnloadRenderTexture(target);
-    unloadTiledShader(shader, uniforms);
+    unloadTiled(&tiled);
 
     CloseWindow();
     return 0;

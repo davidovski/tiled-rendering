@@ -1,6 +1,8 @@
 #include <raylib.h>
 
-typedef struct TiledUniforms {
+#include "tiledfile.h"
+
+typedef struct Tiled {
     float zoom;
     Vector2 offset;
 
@@ -10,6 +12,8 @@ typedef struct TiledUniforms {
     Texture2D atlasTexture;
     Texture2D tilemapTexture;
 
+    RenderTexture2D targetTexture;
+    Shader shader; 
 
     int zoomLoc;
     int offsetLoc;
@@ -20,4 +24,8 @@ typedef struct TiledUniforms {
     int atlasTextureLoc;
     int tilemapTextureLoc;
 
-} TiledUniforms;
+} Tiled;
+
+void initTiled(Tiled *tiled, TiledMap tiledMap);
+void drawTiled(Tiled *tiled);
+void unloadTiled(Tiled *tiled);

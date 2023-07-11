@@ -28,7 +28,6 @@ void modifyTile(Tiled *tiled, int tile) {
 void setDrawMode(Tiled *tiled, int tile) {
     mode = tile % tiled->tiledMap.tileCount;
     if (mode < 0) mode += tiled->tiledMap.tileCount;
-    printf("mode: %d\n", tiled->tiledMap.tileCount);
     modifyTile(tiled, mode);
 }
 
@@ -97,8 +96,6 @@ TiledMap launchEditor(TiledMap tiledMap) {
 
 int main() {
     TiledMap tiledMap = loadTiledMap("map.tiles");
-    printf("the top left is %d\n", tiledMap.tilelayout[0]);
     TiledMap editedTiledMap = launchEditor(tiledMap);
-    printf("the top left is %d\n", editedTiledMap.tilelayout[0]);
     saveTiledMap("map.tiles", tiledMap);
 }

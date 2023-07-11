@@ -111,6 +111,22 @@ TiledMap loadTiledMap(char * filename) {
     return tiledMap;
 }
 
+TiledMap newTiledMap(Image atlas, int tileSize, int width, int height) {
+    TiledMap tiledMap;
+    tiledMap.width = width;
+    tiledMap.height = height;
+    tiledMap.tilelayout = malloc(width * height);
+
+    tiledMap.tileSize = tileSize;
+
+    tiledMap.atlasSize[0] = atlas.width / tileSize;
+    tiledMap.atlasSize[1] = atlas.height / tileSize;
+
+    tiledMap.atlasData = LoadImageColors(atlas);
+
+    return tiledMap;
+}
+
 void saveTiledMap(char * filename, TiledMap tiledMap) {
     FILE * file;
 

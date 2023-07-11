@@ -18,8 +18,9 @@ uniform ivec2 mapSize;
 out vec4 finalColor;
 
 const vec4 none = vec4(0.0f, 0.0f, 0.0f, 0.0f);
+const vec4 gridColor = vec4(0.0f, 0.0f, 0.0f, 0.2f);
 
-bool inBounds(vec2 coords, vec2 area) {
+bool outBounds(vec2 coords, vec2 area) {
     return coords.x > area.x
         || coords.x < 0
         || coords.y > area.y
@@ -33,11 +34,20 @@ ivec2 calcTileOffset(int tileIndex) {
     return ivec2(x, y);
 }
 
+vec4 drawGrid(vec2 coords) {
+    if (abs(floor(coords.x) - coords.x) < 1/16 
+     || abs(floor(coords.y) - coords.y) < 1/16) {
+        return gridColor;
+    } else {
+        return none;
+    }
+}
+
 vec4 tile(vec2 coords, int tileIndex) {
     if (
         tileIndex == 0
-        || inBounds(coords, vec2(1, 1))) {
-        return none;
+        || outBounds(coords, vec2(1, 1))) {
+        return drawGrid(coords);
     } else {
         ivec2 tileOffset = calcTileOffset(tileIndex);
         vec2 texCoords = coords + (tileOffset);
@@ -58,7 +68,7 @@ void main() {
     // get position in tiled world wow
     ivec2 tilemapPos = ivec2(floor(uv));
 
-    if (inBounds(uv, mapSize)) {
+    if (outBounds(uv, mapSize)) {
         finalColor = none;
     } else {
         vec2 position = mod(uv, 1);

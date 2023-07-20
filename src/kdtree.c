@@ -1,5 +1,3 @@
-#include <stdlib.h>
-
 #include "kdtree.h"
 
 kdtree_t * kdtree_create(int x, int y, char * value) {
@@ -75,11 +73,26 @@ void kdtree_walk(kdtree_t *root, void (* consume)(kdtree_t*)) {
     if (root == NULL)
         return;
 
-    if (root->left != NULL)
-        kdtree_walk(root->left, consume);
-    
+    kdtree_walk(root->left, consume);
     consume(root);
+    kdtree_walk(root->right, consume);
+}
+
+int kdtree_size(kdtree_t *root) {
+    if (root == NULL)
+        return 0;
     
-    if (root->right != NULL)
-        kdtree_walk(root->right, consume);
+    return 1 + kdtree_size(root->left) + kdtree_size(root->right);
+}
+
+int kdtree_fwrite(kdtree_t *root, FILE *file) {
+    return fwrite(root, 1, sizeof(kdtree_t), file)
+     | kdtree_fwrite(root->left, file)
+     | kdtree_fwrite(root->right, file);
+}
+
+int kdtree_fread(kdtree_t **root, FILE *file) {
+    return fread(*root, 1, sizeof(kdtree_t), file)
+        | kdtree_fread(&(*root)->left, file)
+        | kdtree_fread(&(*root)->right, file);
 }

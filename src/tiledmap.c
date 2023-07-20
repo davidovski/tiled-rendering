@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "tiledfile.h"
+#include "tiledmap.h"
 
 const int i = 1;
 #define is_bigendian() ( (*(char*)&i) == 0 )

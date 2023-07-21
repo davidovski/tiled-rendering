@@ -2,9 +2,25 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <wchar.h>
 
 #include "chunkedtiledmap.h"
+
+const int endian = 1;
+#define is_bigendian() ( (*(char*)&endian) == 0 )
+
+
+void textureFromPixels(Texture2D *texOut, Color *pixels, int width, int height) {
+    Image checkedIm = {
+        .data = pixels,
+        .width = width,
+        .height = height,
+        .format = PIXELFORMAT_UNCOMPRESSED_R8G8B8A8,
+        .mipmaps = 1
+    };
+
+    *texOut = LoadTextureFromImage(checkedIm);
+}
+
 
 //! read a big endian bytes from file
 int readb(char * out, size_t noBytes, FILE * file) {
@@ -41,17 +57,25 @@ int writeb(char * in, size_t noBytes, FILE * file) {
 }
 
 void buildChunkTree(ChunkedTiledMap *tiledMap) {
-    int noChunks;
+    // initialise chunk tree
+    tiledMap->chunkTree = NULL;
 
-    // 4 bytes for number of chunks
-    readb((char *)&noChunks, 4, tiledMap->file);
     size_t chunkSizeBytes = tiledMap->chunkWidth * tiledMap->chunkHeight;
-    for (int n = 0; n < noChunks; n++) {
+    // calculate how much space there is until the end of the file
+    // TODO save the number of chunks total to avoid having to jump around to find referenceso
+    // or just keep reading chunks until eof or other descriptor
+    long chunksStart = ftell(tiledMap->file);
+    fseek(tiledMap->file, 0, SEEK_END);
+    long totalChunksSize = ftell(tiledMap->file) - chunksStart;
+
+    fseek(tiledMap->file, chunksStart, SEEK_SET);
+
+    for (int n = 0; n < totalChunksSize; n += chunkSizeBytes + 8) {
         int x, y;
         readb((char *)&x, 4, tiledMap->file);
         readb((char *)&y, 4, tiledMap->file);
         long pointer = ftell(tiledMap->file);
-        // TODO casting to pointer here is maybe unsafe
+
         kdtree_insert(&tiledMap->chunkTree, x, y, (char *) pointer);
         fseek(tiledMap->file, chunkSizeBytes, SEEK_CUR);
     }
@@ -85,8 +109,22 @@ ChunkedTiledMap openTiledMap(char * filename) {
     tiledMap.atlasData = malloc(atlasSizeBytes);
     fread(tiledMap.atlasData, atlasSizeBytes, (size_t) 1, file);
     
+    tiledMap.tileCount = tiledMap.atlasSize[0]*tiledMap.atlasSize[1] + 1;
+
     buildChunkTree(&tiledMap);
     return tiledMap;
+}
+
+//! write a chunk to the file
+char* writeChunk(ChunkedTiledMap *tiledMap, int x, int y, char * chunk) {
+    size_t chunkSizeBytes = tiledMap->chunkWidth * tiledMap->chunkHeight;
+
+
+    long pos = (long) kdtree_search(tiledMap->chunkTree, x, y);
+
+    fseek(tiledMap->file, pos, SEEK_SET);
+    fwrite(chunk, 1, chunkSizeBytes, tiledMap->file);
+    return chunk;
 }
 
 char* loadChunk(ChunkedTiledMap tiledMap, int x, int y) {
@@ -95,12 +133,16 @@ char* loadChunk(ChunkedTiledMap tiledMap, int x, int y) {
     char * chunk = malloc(chunkSizeBytes);
 
     long pos = (long) kdtree_search(tiledMap.chunkTree, x, y);
+    // if this chunk is not indexed, return NULL
+    if (pos == 0)
+        return NULL;
+
     fseek(tiledMap.file, pos, SEEK_SET);
     fread(chunk, 1, chunkSizeBytes, tiledMap.file);
     return chunk;
 }
 
-void appendChunk(ChunkedTiledMap *tiledMap, int x, int y, char * chunk) {
+char * appendChunk(ChunkedTiledMap *tiledMap, int x, int y, char * chunk) {
     // TODO does this actually need tiledMap as a pointer
     size_t chunkSizeBytes = tiledMap->chunkWidth * tiledMap->chunkHeight;
 
@@ -108,11 +150,51 @@ void appendChunk(ChunkedTiledMap *tiledMap, int x, int y, char * chunk) {
 
     // calculate position before writing
     long pos = ftell(tiledMap->file) + 8; 
-    kdtree_insert(&tiledMap->chunkTree, x, y, chunk);
+    kdtree_insert(&tiledMap->chunkTree, x, y, (char *)pos);
 
+    int chunkx, chunky;
     writeb((char *) &x, 4, tiledMap->file);
     writeb((char *) &y, 4, tiledMap->file);
     fwrite(chunk, 1, chunkSizeBytes, tiledMap->file);
+
+    return chunk;
+}
+
+char * appendEmptyChunk(ChunkedTiledMap * tiledMap, int x, int y) {
+    char * chunk = calloc(tiledMap->chunkWidth*tiledMap->chunkHeight, 1);
+    return appendChunk(tiledMap, x, y, chunk);
+}
+
+char getChunkedTile(ChunkedTiledMap tiledMap, int x, int y) {
+    // TODO put this calculation in function
+    int inChunkX = x % tiledMap.chunkWidth;
+    int inChunkY = y % tiledMap.chunkHeight;
+    int chunkX = (x - inChunkX) / tiledMap.chunkWidth;
+    int chunkY = (y - inChunkY) / tiledMap.chunkHeight;
+
+    char * chunk = loadChunk(tiledMap, chunkX, chunkY);
+    if (chunk == NULL)
+        return 0;
+
+    char v = chunk[inChunkY * tiledMap.chunkWidth + inChunkX];
+    return v;
+}
+
+char setChunkedTile(ChunkedTiledMap * tiledMap, int x, int y, char value) {
+    int inChunkX = x % tiledMap->chunkWidth;
+    int inChunkY = y % tiledMap->chunkHeight;
+    int chunkX = (x - inChunkX) / tiledMap->chunkWidth;
+    int chunkY = (y - inChunkY) / tiledMap->chunkHeight;
+
+    char * chunk = loadChunk(*tiledMap, chunkX, chunkY);
+    if (chunk == NULL)
+        chunk = appendEmptyChunk(tiledMap, chunkX, chunkY);
+
+    chunk[inChunkY * tiledMap->chunkWidth + inChunkX] = value;
+
+    writeChunk(tiledMap, chunkX, chunkY, chunk);
+
+    return value;
 }
 
 
@@ -136,7 +218,7 @@ void writeTiledMapHeader(ChunkedTiledMap tiledMap) {
     // TODO when caching, commit everything left in cache here
 }
 
-ChunkedTiledMap newTiledMap(char * filename, Image atlas, int tileSize, int chunkWidth, int chunkHeight, int width, int height) {
+ChunkedTiledMap openNewTiledMap(char * filename, Image atlas, int tileSize, int chunkWidth, int chunkHeight, int width, int height) {
     ChunkedTiledMap tiledMap;
     tiledMap.chunkWidth = chunkWidth;
     tiledMap.chunkHeight = chunkHeight;
@@ -147,8 +229,11 @@ ChunkedTiledMap newTiledMap(char * filename, Image atlas, int tileSize, int chun
     tiledMap.atlasSize[1] = atlas.height / tileSize;
 
     tiledMap.atlasData = LoadImageColors(atlas);
+    tiledMap.tileCount = tiledMap.atlasSize[0]*tiledMap.atlasSize[1] + 1;
 
-    if (!(tiledMap.file = fopen(filename, "r+b"))) {
+    tiledMap.chunkTree = NULL;
+
+    if (!(tiledMap.file = fopen(filename, "wb"))) {
         fprintf(stderr, "Failed to load %s\n", filename);
     }
 
@@ -159,6 +244,13 @@ ChunkedTiledMap newTiledMap(char * filename, Image atlas, int tileSize, int chun
             appendChunk(&tiledMap, x, y,  chunk);
         }
     }
+    
+    // reopen the file in read+write mode
+    fclose(tiledMap.file);
+
+    if (!(tiledMap.file = fopen(filename, "r+b"))) {
+        fprintf(stderr, "Failed to load %s\n", filename);
+    }
 
     return tiledMap;
 }
@@ -168,6 +260,4 @@ void closeTiledMap(ChunkedTiledMap tiledMap) {
     UnloadImageColors(tiledMap.atlasData);
     fclose(tiledMap.file);
 }
-
-
 

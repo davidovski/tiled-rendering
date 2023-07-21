@@ -31,3 +31,6 @@ int kdtree_fwrite(kdtree_t *root, FILE *file);
 //! read a tree from file
 int kdtree_fread(kdtree_t **root, FILE *file);
 
+//! print a single node (debug purposes)
+void print_node(kdtree_t *tree);
+

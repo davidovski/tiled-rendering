@@ -22,7 +22,7 @@ void drawOverlay(Tiled tiled) {
 }
 
 void modifyTile(Tiled *tiled, int tile) {
-    setTiledMapTile(tiled->tiledMap, selectedTile, tile);
+    setChunkedTile(&tiled->tiledMap, selectedTile[0], selectedTile[1], tile);
     redrawTiledMap(*tiled);
 }
 
@@ -34,10 +34,10 @@ void setDrawMode(Tiled *tiled, int tile) {
 
 void handleInputs(Tiled *tiled) {
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
-        setDrawMode(tiled, getTiledMapTile(tiled->tiledMap, selectedTile) + 1);
+        setDrawMode(tiled, getChunkedTile(tiled->tiledMap, selectedTile[0], selectedTile[1]) + 1);
 
     if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
-        setDrawMode(tiled, getTiledMapTile(tiled->tiledMap, selectedTile) - 1);
+        setDrawMode(tiled, getChunkedTile(tiled->tiledMap, selectedTile[0], selectedTile[1]) - 1);
 
     if (IsMouseButtonPressed(MOUSE_BUTTON_MIDDLE))
         setDrawMode(tiled, 0);
@@ -59,8 +59,8 @@ void update(Tiled *tiled) {
     updateTiledCamera(tiled);
     Vector2 mousePos = GetMousePosition();
     Vector2 mapPos = translateTiledPosition(*tiled, mousePos);
-    if (mapPos.x >= 0 && mapPos.x < tiled->tiledMap.width
-        && mapPos.y >= 0 && mapPos.y < tiled->tiledMap.height) {
+    if (mapPos.x >= 0 && mapPos.x < tiled->mapSize[0]
+        && mapPos.y >= 0 && mapPos.y < tiled->mapSize[1]) {
         lastSelectedTile[0] = selectedTile[0];
         lastSelectedTile[1] = selectedTile[1];
         selectedTile[0] = mapPos.x;
@@ -69,7 +69,7 @@ void update(Tiled *tiled) {
     handleInputs(tiled);
 }
 
-TiledMap launchEditor(TiledMap tiledMap) {
+ChunkedTiledMap launchEditor(ChunkedTiledMap tiledMap) {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(SCREEN_W, SCREEN_H, "tiled");
 
@@ -92,7 +92,7 @@ TiledMap launchEditor(TiledMap tiledMap) {
     unloadTiled(&tiled);
 
     CloseWindow();
-    return tiled.tiledMap;
+    return tiledMap;
 }
 
 void printUsage(char *progname) {
@@ -104,11 +104,14 @@ int main(int argc, char *argv[]) {
     char * tiledFilePath;
     const char * atlasFilePath = NULL;
     int tileSize = 16;
-    int mapSize = 16;
+    int mapSize = 2;
+    int chunkSize = 2;
 
     int flags, opt;
-    while ((opt = getopt(argc, argv, "s:a:h")) != -1) {
+    while ((opt = getopt(argc, argv, "c:s:a:h")) != -1) {
         switch (opt) {
+            case 'c':
+                chunkSize = atoi(optarg);
             case 's':
                 mapSize = atoi(optarg);
             case 't':
@@ -123,7 +126,7 @@ int main(int argc, char *argv[]) {
 
     tiledFilePath = argv[optind];
 
-    TiledMap tiledMap;
+    ChunkedTiledMap tiledMap;
     if (access(tiledFilePath, F_OK)) {
         if (atlasFilePath == NULL) {
             fprintf(stderr, "Atlas file must be specified!\n");
@@ -131,11 +134,11 @@ int main(int argc, char *argv[]) {
         }
 
         Image atlasImage = LoadImage(atlasFilePath);
-        tiledMap = newTiledMap(atlasImage, tileSize, mapSize, mapSize);
+        tiledMap = openNewTiledMap(tiledFilePath, atlasImage, tileSize, chunkSize, chunkSize, mapSize, mapSize);
     } else {
-        tiledMap = loadTiledMap(tiledFilePath);
+        tiledMap = openTiledMap(tiledFilePath);
     }
 
-    TiledMap editedTiledMap = launchEditor(tiledMap);
-    saveTiledMap(tiledFilePath, tiledMap);
+    launchEditor(tiledMap);
+    closeTiledMap(tiledMap);
 }

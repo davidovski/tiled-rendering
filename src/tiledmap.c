@@ -111,7 +111,7 @@ TiledMap loadTiledMap(char * filename) {
     return tiledMap;
 }
 
-TiledMap newTiledMap(Image atlas, int tileSize, int width, int height) {
+TiledMap openNewTiledMap(Image atlas, int tileSize, int width, int height) {
     TiledMap tiledMap;
     tiledMap.width = width;
     tiledMap.height = height;

@@ -1,5 +1,9 @@
 #include "kdtree.h"
 
+void print_node(kdtree_t *tree) {
+    printf("[%d,%d] %ld\n", tree->x, tree->y, (long)tree->value); 
+}
+
 kdtree_t * kdtree_create(int x, int y, char * value) {
     kdtree_t * tree = malloc(sizeof(kdtree_t));
     tree->x = x;

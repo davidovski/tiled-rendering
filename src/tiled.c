@@ -3,6 +3,8 @@
 
 #include "tiled.h"
 
+int alpha =0;
+
 void updateCamera(Vector2 *offset, float *zoom) {
     if (IsKeyDown(KEY_UP)) offset->y += 16.0f / *zoom;
     if (IsKeyDown(KEY_DOWN)) offset->y -=  16.0f/ *zoom;
@@ -15,6 +17,7 @@ void updateCamera(Vector2 *offset, float *zoom) {
 
 void updateTiledCamera(Tiled *tiled) {
     updateCamera(&tiled->offset, &tiled->zoom);
+    alpha++;
 }
 
 
@@ -47,12 +50,11 @@ Vector2 translateTiledScreenPosition(Tiled tiled, Vector2 tiledPos) {
 
 void redrawTiledMap(Tiled tiled) {
     BeginTextureMode(tiled.tilemapTexture);
-    for (int y = 0; y < tiled.tiledMap.height; y++) {
-        for (int x = 0; x < tiled.tiledMap.width; x++) {
-            int i = (tiled.tiledMap.height - y - 1)*tiled.tiledMap.width + x;
+    for (int y = 0; y < tiled.mapSize[1]; y++) {
+        for (int x = 0; x < tiled.mapSize[0]; x++) {
+            unsigned char v = getChunkedTile(tiled.tiledMap, x, tiled.mapSize[1] - y - 1);
             Color c = (Color){ 
-                tiled.tiledMap.tilelayout[i], 
-                0, 0, 255 
+                v, 0, 0, 255 
             };
             DrawPixel(x, y, c);
         }
@@ -62,17 +64,18 @@ void redrawTiledMap(Tiled tiled) {
 }
 
 
-Tiled initTiled(TiledMap tiledMap) {
+Tiled initTiled(ChunkedTiledMap tiledMap) {
     Tiled tiled;
     tiled.tiledMap = tiledMap;
 
     tiled.offset = (Vector2) {0, 0};
     tiled.zoom = 64;
 
-    tiled.mapSize[0] = tiledMap.width;
-    tiled.mapSize[1] = tiledMap.height;
+    // TODO mapSize is obsolete, should be visible map size
+    tiled.mapSize[0] = tiledMap.chunkWidth * 20;
+    tiled.mapSize[1] = tiledMap.chunkHeight * 20;
     tiled.targetTexture = LoadRenderTexture(1, 1);
-    tiled.tilemapTexture = LoadRenderTexture(tiledMap.width, tiledMap.width);
+    tiled.tilemapTexture = LoadRenderTexture(tiled.mapSize[0], tiled.mapSize[1]);
 
     tiled.atlasSize[0] = tiledMap.atlasSize[0];
     tiled.atlasSize[1] = tiledMap.atlasSize[1];
@@ -119,30 +122,4 @@ void drawTiled(Tiled *tiled) {
             //(Rectangle){0, 0, GetScreenWidth(), GetScreenHeight()},
             //(Vector2){0, 0},
             //WHITE);
-}
-
-int launchTiledView() {
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
-    InitWindow(SCREEN_W, SCREEN_H, "tiled");
-
-    TiledMap tiledMap = loadTiledMap("map.tiles");
-    Tiled tiled = initTiled(tiledMap);
-
-    while (!WindowShouldClose()) {
-        updateTiledCamera(&tiled);
-
-        BeginDrawing();
-
-        ClearBackground(LIGHTGRAY);
-
-        drawTiled(&tiled);
-        DrawFPS(16, 16);
-
-        EndDrawing();
-    }
-
-    unloadTiled(&tiled);
-
-    CloseWindow();
-    return 0;
 }

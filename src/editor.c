@@ -59,13 +59,11 @@ void update(Tiled *tiled) {
     updateTiledCamera(tiled);
     Vector2 mousePos = GetMousePosition();
     Vector2 mapPos = translateTiledPosition(*tiled, mousePos);
-    if (mapPos.x >= 0 && mapPos.x < tiled->mapSize[0]
-        && mapPos.y >= 0 && mapPos.y < tiled->mapSize[1]) {
+
         lastSelectedTile[0] = selectedTile[0];
         lastSelectedTile[1] = selectedTile[1];
         selectedTile[0] = mapPos.x;
         selectedTile[1] = mapPos.y;
-    }
     handleInputs(tiled);
 }
 

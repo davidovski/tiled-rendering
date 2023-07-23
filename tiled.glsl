@@ -13,7 +13,7 @@ uniform sampler2D tilemapTexture;
 uniform vec2 offset;
 uniform float zoom;
 uniform ivec2 atlasSize;
-uniform ivec2 mapSize;
+uniform ivec2 renderArea;
 
 out vec4 finalColor;
 
@@ -68,7 +68,7 @@ void main() {
     // get position in tiled world wow
     ivec2 tilemapPos = ivec2(floor(uv));
 
-    if (outBounds(uv, mapSize)) {
+    if (outBounds(uv, renderArea)) {
         finalColor = none;
     } else {
         vec2 position = mod(uv, 1);

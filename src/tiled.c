@@ -5,21 +5,27 @@
 
 int alpha =0;
 
-void updateCamera(Vector2 *offset, float *zoom) {
-    if (IsKeyDown(KEY_UP)) offset->y += 16.0f / *zoom;
-    if (IsKeyDown(KEY_DOWN)) offset->y -=  16.0f/ *zoom;
-    if (IsKeyDown(KEY_RIGHT)) offset->x -= 16.0f / *zoom;
-    if (IsKeyDown(KEY_LEFT)) offset->x += 16.0f / *zoom;
+void updateCamera(Tiled * tiled) {
+    if (IsKeyDown(KEY_UP)) tiled->offset.y += 4.0f / tiled->zoom;
+    if (IsKeyDown(KEY_DOWN)) tiled->offset.y -=  4.0f / tiled->zoom;
+    if (IsKeyDown(KEY_RIGHT)) tiled->offset.x -= 4.0f / tiled->zoom;
+    if (IsKeyDown(KEY_LEFT)) tiled->offset.x += 4.0f / tiled->zoom;
 
-    if (IsKeyDown(KEY_W)) *zoom += *zoom * 0.01f;
-    if (IsKeyDown(KEY_S)) *zoom -= *zoom * 0.01f;
+    if (IsKeyDown(KEY_W)) tiled->zoom += tiled->zoom * 0.01f;
+    if (IsKeyDown(KEY_S)) tiled->zoom -= tiled->zoom * 0.01f;
+
+    tiled->chunkOffset[0] = tiled->offset.x / tiled->tiledMap.chunkWidth;
+    tiled->chunkOffset[1] = tiled->offset.y / tiled->tiledMap.chunkHeight;
+
+    tiled->renderOffset.x = tiled->offset.x - tiled->chunkOffset[0]*tiled->tiledMap.chunkWidth;
+    tiled->renderOffset.y = tiled->offset.y - tiled->chunkOffset[1]*tiled->tiledMap.chunkHeight;
+    redrawTiledMap(*tiled);
 }
 
 void updateTiledCamera(Tiled *tiled) {
-    updateCamera(&tiled->offset, &tiled->zoom);
+    updateCamera(tiled);
     alpha++;
 }
-
 
 void initTiledShader(Tiled *tiled) {
     tiled->shader = LoadShader(0, "tiled.glsl");
@@ -28,7 +34,7 @@ void initTiledShader(Tiled *tiled) {
     tiled->zoomLoc = GetShaderLocation(tiled->shader, "zoom");
 
     tiled->atlasSizeLoc = GetShaderLocation(tiled->shader, "atlasSize");
-    tiled->mapSizeLoc = GetShaderLocation(tiled->shader, "mapSize");
+    tiled->renderAreaLoc = GetShaderLocation(tiled->shader, "renderArea");
 
     tiled->atlasTextureLoc = GetShaderLocation(tiled->shader, "atlasTexture");
     tiled->tilemapTextureLoc = GetShaderLocation(tiled->shader, "tilemapTexture");
@@ -43,36 +49,34 @@ Vector2 translateTiledPosition(Tiled tiled, Vector2 screenPos) {
 
 Vector2 translateTiledScreenPosition(Tiled tiled, Vector2 tiledPos) {
     return (Vector2) {
-        (tiledPos.x + tiled.offset.x) * tiled.zoom,
-        (tiledPos.y + tiled.offset.y) * tiled.zoom
+        (tiledPos.x + tiled.renderOffset.x + tiled.chunkOffset[0]*tiled.tiledMap.chunkWidth) * tiled.zoom,
+        (tiledPos.y + tiled.renderOffset.y + tiled.chunkOffset[1]*tiled.tiledMap.chunkHeight) * tiled.zoom
     };
+}
+
+Tile getOffsetTile(TiledMap * tiledMap, int chunkOffset[2], int x, int y) {
+    return getChunkedTile(tiledMap, 
+            x - chunkOffset[0]*tiledMap->chunkWidth,
+            y - chunkOffset[1]*tiledMap->chunkHeight);
 }
 
 void redrawTile(Tiled tiled, int x, int y) {
     BeginTextureMode(tiled.tilemapTexture);
-    unsigned char v = getChunkedTile(&tiled.tiledMap, x, y);
-    Color c = (Color){ 
-        v, 0, 0, 255 
-    };
-    DrawPixel(x, tiled.mapSize[1] - y - 1, c);
+    Tile v = getOffsetTile(&tiled.tiledMap, tiled.chunkOffset, x, y);
+    DrawPixel(x, tiled.renderArea[1] - y - 1, (Color){ v, 0, 0, 255 });
     EndTextureMode();
 }
 
 void redrawTiledMap(Tiled tiled) {
     BeginTextureMode(tiled.tilemapTexture);
-    for (int y = 0; y < tiled.mapSize[1]; y++) {
-        for (int x = 0; x < tiled.mapSize[0]; x++) {
-            unsigned char v = getChunkedTile(&tiled.tiledMap, x, y);
-            Color c = (Color){ 
-                v, 0, 0, 255 
-            };
-            DrawPixel(x, tiled.mapSize[1] - y - 1, c);
+    for (int y = 0; y < tiled.renderArea[1]; y++) {
+        for (int x = 0; x < tiled.renderArea[0]; x++) {
+            Tile v = getOffsetTile(&tiled.tiledMap, tiled.chunkOffset, x, y);
+            DrawPixel(x, tiled.renderArea[1] - y - 1, (Color){ v, 0, 0, 255 });
         }
     }
     EndTextureMode();
-
 }
-
 
 Tiled initTiled(TiledMap tiledMap) {
     Tiled tiled;
@@ -81,11 +85,11 @@ Tiled initTiled(TiledMap tiledMap) {
     tiled.offset = (Vector2) {0, 0};
     tiled.zoom = 64;
 
-    // TODO mapSize is obsolete, should be visible map size
-    tiled.mapSize[0] = tiledMap.chunkWidth * 20;
-    tiled.mapSize[1] = tiledMap.chunkHeight * 20;
+    // TODO renderArea is obsolete, should be visible map size
+    tiled.renderArea[0] = tiledMap.chunkWidth * RENDER_DISTANCE;
+    tiled.renderArea[1] = tiledMap.chunkHeight * RENDER_DISTANCE;
     tiled.targetTexture = LoadRenderTexture(1, 1);
-    tiled.tilemapTexture = LoadRenderTexture(tiled.mapSize[0], tiled.mapSize[1]);
+    tiled.tilemapTexture = LoadRenderTexture(tiled.renderArea[0], tiled.renderArea[1]);
 
     tiled.atlasSize[0] = tiledMap.atlasSize[0];
     tiled.atlasSize[1] = tiledMap.atlasSize[1];
@@ -102,11 +106,12 @@ Tiled initTiled(TiledMap tiledMap) {
 }
 
 void setTiledShaderUniforms(Tiled tiled) {
-    SetShaderValue(tiled.shader, tiled.offsetLoc, &tiled.offset, SHADER_UNIFORM_VEC2);
+    SetShaderValue(tiled.shader, tiled.offsetLoc, &tiled.renderOffset, SHADER_UNIFORM_VEC2);
     SetShaderValue(tiled.shader, tiled.zoomLoc, &tiled.zoom, SHADER_UNIFORM_FLOAT);
 
     SetShaderValue(tiled.shader, tiled.atlasSizeLoc, &tiled.atlasSize, SHADER_UNIFORM_IVEC2);
-    SetShaderValue(tiled.shader, tiled.mapSizeLoc, &tiled.mapSize, SHADER_UNIFORM_IVEC2);
+    SetShaderValue(tiled.shader, tiled.renderAreaLoc, &tiled.renderArea, SHADER_UNIFORM_IVEC2);
+
 
     SetShaderValueTexture(tiled.shader, tiled.atlasTextureLoc, tiled.atlasTexture);
     SetShaderValueTexture(tiled.shader, tiled.tilemapTextureLoc, tiled.tilemapTexture.texture);

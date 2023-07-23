@@ -133,6 +133,7 @@ void unloadChunk(TiledMap * tiledMap, CachedChunk * cached) {
     // free memory
     free(cached->chunk);
     cached->chunk = NULL;
+    
 }
 
 //! load a chunk into the cache and return it 
@@ -151,6 +152,7 @@ CachedChunk * loadChunk(TiledMap * tiledMap, int x, int y) {
         cached->chunk = malloc(chunkSizeBytes);
         fseek(tiledMap->file, cached->filePos, SEEK_SET);
         fread(cached->chunk, 1, chunkSizeBytes, tiledMap->file);
+        printf("loading chunk %d,%d, from %ld\n", x, y, cached->filePos);
     }
 
     return cached;
@@ -182,7 +184,7 @@ CachedChunk * createEmptyChunk(TiledMap * tiledMap, int x, int y) {
     return createChunk(tiledMap, x, y, chunk);
 }
 
-char getChunkedTile(TiledMap *tiledMap, int x, int y) {
+Tile getChunkedTile(TiledMap *tiledMap, int x, int y) {
     // TODO put this calculation in function
     int inChunkX = x % tiledMap->chunkWidth;
     int inChunkY = y % tiledMap->chunkHeight;
@@ -196,11 +198,11 @@ char getChunkedTile(TiledMap *tiledMap, int x, int y) {
     if (cached->chunk == NULL)
         return 0;
 
-    char v = cached->chunk[inChunkY * tiledMap->chunkWidth + inChunkX];
+    Tile v = cached->chunk[inChunkY * tiledMap->chunkWidth + inChunkX];
     return v;
 }
 
-char setChunkedTile(TiledMap * tiledMap, int x, int y, char value) {
+Tile setChunkedTile(TiledMap * tiledMap, int x, int y, Tile value) {
     int inChunkX = x % tiledMap->chunkWidth;
     int inChunkY = y % tiledMap->chunkHeight;
     int chunkX = (x - inChunkX) / tiledMap->chunkWidth;
@@ -260,7 +262,7 @@ TiledMap openNewTiledMap(char * filename, Image atlas, int tileSize, int chunkWi
     writeTiledMapHeader(tiledMap);
     for (int x = 0; x < width; x++) {
         for (int y = 0; y < height; y++) {
-            char * chunk = calloc(chunkWidth*chunkHeight, 1);
+            Chunk chunk = calloc(chunkWidth*chunkHeight, 1);
             createChunk(&tiledMap, x, y,  chunk);
         }
     }

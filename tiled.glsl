@@ -18,7 +18,7 @@ uniform ivec2 renderArea;
 out vec4 finalColor;
 
 const vec4 none = vec4(0.0f, 0.0f, 0.0f, 0.0f);
-const vec4 gridColor = vec4(0.0f, 0.0f, 0.0f, 0.05f);
+const vec4 gridColor = vec4(0.0f, 0.0f, 0.0f, 0.0f);
 
 bool outBounds(vec2 coords, vec2 area) {
     return coords.x > area.x

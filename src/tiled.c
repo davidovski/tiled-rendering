@@ -14,15 +14,19 @@ void updateCamera(Tiled * tiled) {
     if (IsKeyDown(KEY_W)) tiled->zoom += tiled->zoom * 0.01f;
     if (IsKeyDown(KEY_S)) tiled->zoom -= tiled->zoom * 0.01f;
 
+    tiled->chunkOffset[2] = tiled->chunkOffset[0];
+    tiled->chunkOffset[3] = tiled->chunkOffset[1];
+
     tiled->chunkOffset[0] = tiled->offset.x / tiled->tiledMap.chunkWidth;
     tiled->chunkOffset[1] = tiled->offset.y / tiled->tiledMap.chunkHeight;
 
     tiled->renderOffset.x = tiled->offset.x - tiled->chunkOffset[0]*tiled->tiledMap.chunkWidth;
     tiled->renderOffset.y = tiled->offset.y - tiled->chunkOffset[1]*tiled->tiledMap.chunkHeight;
 
-    // TODO only do this when chunk offset has changed
     // TODO unload chunks when they are no longer visible
-    redrawTiledMap(*tiled);
+    if (tiled->chunkOffset[0] != tiled->chunkOffset[2]
+        || tiled->chunkOffset[1] != tiled->chunkOffset[3])
+        redrawTiledMap(*tiled);
 }
 
 void updateTiledCamera(Tiled *tiled) {
@@ -52,29 +56,35 @@ Vector2 translateTiledPosition(Tiled tiled, Vector2 screenPos) {
 
 Vector2 translateTiledScreenPosition(Tiled tiled, Vector2 tiledPos) {
     return (Vector2) {
-        (tiledPos.x + tiled.renderOffset.x + tiled.chunkOffset[0]*tiled.tiledMap.chunkWidth) * tiled.zoom,
-        (tiledPos.y + tiled.renderOffset.y + tiled.chunkOffset[1]*tiled.tiledMap.chunkHeight) * tiled.zoom
+        (tiledPos.x + tiled.offset.x) * tiled.zoom,
+        (tiledPos.y + tiled.offset.y) * tiled.zoom
     };
 }
 
-Tile getOffsetTile(TiledMap * tiledMap, int chunkOffset[2], int x, int y) {
-    return getChunkedTile(tiledMap, 
-            x - chunkOffset[0]*tiledMap->chunkWidth,
-            y - chunkOffset[1]*tiledMap->chunkHeight);
-}
-
 void redrawTile(Tiled tiled, int x, int y) {
+    int areaX = x + tiled.chunkOffset[0]*tiled.tiledMap.chunkWidth;
+    int areaY = tiled.renderArea[1] - y - tiled.chunkOffset[1]*tiled.tiledMap.chunkHeight - 1;
+
+    Tile v = getChunkedTile(&tiled.tiledMap, x, y);
+
     BeginTextureMode(tiled.tilemapTexture);
-    Tile v = getOffsetTile(&tiled.tiledMap, tiled.chunkOffset, x, y);
-    DrawPixel(x, tiled.renderArea[1] - y - 1, (Color){ v, 0, 0, 255 });
+    DrawPixel(areaX, areaY, (Color){ v, 0, 0, 255 });
     EndTextureMode();
 }
 
 void redrawTiledMap(Tiled tiled) {
+    // TODO since we have to do this every time a chunk is loaded, maybe there is a better way
+    int realX, realY;
+    Tile v;
+
     BeginTextureMode(tiled.tilemapTexture);
     for (int y = 0; y < tiled.renderArea[1]; y++) {
         for (int x = 0; x < tiled.renderArea[0]; x++) {
-            Tile v = getOffsetTile(&tiled.tiledMap, tiled.chunkOffset, x, y);
+            realX = x - tiled.chunkOffset[0]*tiled.tiledMap.chunkWidth;
+            realY = y - tiled.chunkOffset[1]*tiled.tiledMap.chunkHeight;
+
+            v = getChunkedTile(&tiled.tiledMap, realX, realY);
+
             DrawPixel(x, tiled.renderArea[1] - y - 1, (Color){ v, 0, 0, 255 });
         }
     }
@@ -88,9 +98,11 @@ Tiled initTiled(TiledMap tiledMap) {
     tiled.offset = (Vector2) {0, 0};
     tiled.zoom = 64;
 
-    // TODO renderArea is obsolete, should be visible map size
     tiled.renderArea[0] = tiledMap.chunkWidth * RENDER_DISTANCE;
     tiled.renderArea[1] = tiledMap.chunkHeight * RENDER_DISTANCE;
+
+    printf("Render area %dx%d\n", tiled.renderArea[0], tiled.renderArea[1]);
+
     tiled.targetTexture = LoadRenderTexture(1, 1);
     tiled.tilemapTexture = LoadRenderTexture(tiled.renderArea[0], tiled.renderArea[1]);
 

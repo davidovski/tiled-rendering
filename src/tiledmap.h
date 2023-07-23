@@ -6,12 +6,12 @@
 typedef unsigned char Tile;
 typedef Tile * Chunk;
 
-typedef struct CachedChunk {
+typedef struct {
     long filePos;
     Chunk chunk;
 } CachedChunk;
 
-typedef struct ChunkedTiledMap {
+typedef struct {
     FILE * file;
     int chunkWidth;
     int chunkHeight;

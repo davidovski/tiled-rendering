@@ -5,19 +5,19 @@
 #define SCREEN_W 1280
 #define SCREEN_H 720
 
-#define RENDER_DISTANCE 16
+#define RENDER_DISTANCE 4
 
-typedef struct Tiled {
+typedef struct {
     TiledMap tiledMap;
     float zoom;
-    
+
     // main viewport offset
     Vector2 offset;
 
     // offset passed to shader for rendering
     Vector2 renderOffset;
     // offset used to calculate which chunks to render
-    int chunkOffset[2];
+    int chunkOffset[4];
 
     int atlasSize[2];
     int renderArea[2];

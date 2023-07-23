@@ -4,56 +4,7 @@
 #include <unistd.h>
 
 #include "tiledmap.h"
-
-const int endian = 1;
-#define is_bigendian() ( (*(char*)&endian) == 0 )
-
-void textureFromPixels(Texture2D *texOut, Color *pixels, int width, int height) {
-    Image checkedIm = {
-        .data = pixels,
-        .width = width,
-        .height = height,
-        .format = PIXELFORMAT_UNCOMPRESSED_R8G8B8A8,
-        .mipmaps = 1
-    };
-
-    *texOut = LoadTextureFromImage(checkedIm);
-}
-
-
-//! read a big endian bytes from file
-int readb(char * out, size_t noBytes, FILE * file) {
-    if (!fread(out, (size_t)1, (size_t) noBytes, file))
-        return 1;
-
-    if (is_bigendian()) 
-        return 0;
-
-    int tmp;
-    // reverse byte order
-    for(int i = 0; i < noBytes/2; i++) {
-        tmp = out[i];
-        out[i] = out[noBytes-i-1];
-        out[noBytes-i-1] = tmp;
-    }
-
-    return 0;
-}
-
-int writeb(char * in, size_t noBytes, FILE * file) {
-    if (!is_bigendian()) {
-        int tmp;
-        // reverse byte order
-        for(int i = 0; i < noBytes/2; i++) {
-            tmp = in[i];
-            in[i] = in[noBytes-i-1];
-            in[noBytes-i-1] = tmp;
-        }
-        
-    }
-
-    return fwrite(in, (size_t)1, (size_t) noBytes, file);
-}
+#include "tiledio.h"
 
 void buildChunkTree(TiledMap *tiledMap) {
     // initialise chunk tree
@@ -143,7 +94,6 @@ void unloadChunk(TiledMap * tiledMap, CachedChunk * cached) {
 
 //! load a chunk into the cache and return it 
 CachedChunk * loadChunk(TiledMap * tiledMap, int x, int y) {
-    // TODO add caching for this
     size_t chunkSizeBytes = tiledMap->chunkWidth * tiledMap->chunkHeight;
 
 
@@ -157,7 +107,6 @@ CachedChunk * loadChunk(TiledMap * tiledMap, int x, int y) {
         cached->chunk = malloc(chunkSizeBytes);
         fseek(tiledMap->file, cached->filePos, SEEK_SET);
         fread(cached->chunk, 1, chunkSizeBytes, tiledMap->file);
-        printf("loading chunk %d,%d, from %ld\n", x, y, cached->filePos);
     }
 
     return cached;
@@ -184,46 +133,49 @@ CachedChunk * createChunk(TiledMap *tiledMap, int x, int y, Chunk chunk) {
     return cached;
 }
 
-CachedChunk * createEmptyChunk(TiledMap * tiledMap, int x, int y) {
+CachedChunk * createEmptyChunkAt(TiledMap * tiledMap, int x, int y) {
     Chunk chunk = calloc(tiledMap->chunkWidth*tiledMap->chunkHeight, 1);
-    return createChunk(tiledMap, x, y, chunk);
+    return createChunk(tiledMap, x / tiledMap->chunkWidth, y / tiledMap->chunkHeight, chunk);
 }
 
-Tile getChunkedTile(TiledMap *tiledMap, int x, int y) {
-    // TODO put this calculation in function
+CachedChunk * loadChunkPosition(TiledMap *tiledMap, int x, int y, int * index) {
     int inChunkX = x % tiledMap->chunkWidth;
     int inChunkY = y % tiledMap->chunkHeight;
     int chunkX = (x - inChunkX) / tiledMap->chunkWidth;
     int chunkY = (y - inChunkY) / tiledMap->chunkHeight;
+    *index = inChunkY * tiledMap->chunkWidth + inChunkX;
 
+    return loadChunk(tiledMap, chunkX, chunkY);
+}
+
+Tile getChunkedTile(TiledMap *tiledMap, int x, int y) {
     if (x < 0 || y < 0)
         return 0;
 
-    CachedChunk * cached = loadChunk(tiledMap, chunkX, chunkY);
+    int index;
+    CachedChunk * cached = loadChunkPosition(tiledMap, x, y, &index);
+
     if (cached == NULL)
         return 0;
 
     if (cached->chunk == NULL)
         return 0;
 
-    Tile v = cached->chunk[inChunkY * tiledMap->chunkWidth + inChunkX];
-    return v;
+    return cached->chunk[index];
 }
 
 Tile setChunkedTile(TiledMap * tiledMap, int x, int y, Tile value) {
-    int inChunkX = x % tiledMap->chunkWidth;
-    int inChunkY = y % tiledMap->chunkHeight;
-    int chunkX = (x - inChunkX) / tiledMap->chunkWidth;
-    int chunkY = (y - inChunkY) / tiledMap->chunkHeight;
+    if (x < 0 || y < 0)
+        return 0;
 
-    CachedChunk * cached = loadChunk(tiledMap, chunkX, chunkY);
+    int index;
+    CachedChunk * cached = loadChunkPosition(tiledMap, x, y, &index);
+
     if (cached == NULL)
-        cached = createEmptyChunk(tiledMap, chunkX, chunkY);
+        cached = createEmptyChunkAt(tiledMap, x, y);
 
-    cached->chunk[inChunkY * tiledMap->chunkWidth + inChunkX] = value;
+    cached->chunk[index] = value;
 
-    // TODO do this when unloading
-    //commitChunk(tiledMap, cached);
     return value;
 }
 
@@ -244,8 +196,6 @@ void writeTiledMapHeader(TiledMap tiledMap) {
     writeb((char *) &tiledMap.atlasSize[1], 4, file);
 
     fwrite(tiledMap.atlasData, 1, atlasSizeBytes, file);
-    // since chunks are already directly written here, do not write anything else
-    // TODO when caching, commit everything left in cache here
 }
 
 TiledMap openNewTiledMap(char * filename, Image atlas, int tileSize, int chunkWidth, int chunkHeight, int width, int height) {

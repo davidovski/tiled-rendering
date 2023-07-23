@@ -48,15 +48,25 @@ Vector2 translateTiledScreenPosition(Tiled tiled, Vector2 tiledPos) {
     };
 }
 
+void redrawTile(Tiled tiled, int x, int y) {
+    BeginTextureMode(tiled.tilemapTexture);
+    unsigned char v = getChunkedTile(&tiled.tiledMap, x, y);
+    Color c = (Color){ 
+        v, 0, 0, 255 
+    };
+    DrawPixel(x, tiled.mapSize[1] - y - 1, c);
+    EndTextureMode();
+}
+
 void redrawTiledMap(Tiled tiled) {
     BeginTextureMode(tiled.tilemapTexture);
     for (int y = 0; y < tiled.mapSize[1]; y++) {
         for (int x = 0; x < tiled.mapSize[0]; x++) {
-            unsigned char v = getChunkedTile(tiled.tiledMap, x, tiled.mapSize[1] - y - 1);
+            unsigned char v = getChunkedTile(&tiled.tiledMap, x, y);
             Color c = (Color){ 
                 v, 0, 0, 255 
             };
-            DrawPixel(x, y, c);
+            DrawPixel(x, tiled.mapSize[1] - y - 1, c);
         }
     }
     EndTextureMode();
@@ -64,7 +74,7 @@ void redrawTiledMap(Tiled tiled) {
 }
 
 
-Tiled initTiled(ChunkedTiledMap tiledMap) {
+Tiled initTiled(TiledMap tiledMap) {
     Tiled tiled;
     tiled.tiledMap = tiledMap;
 

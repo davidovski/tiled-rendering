@@ -1,23 +1,33 @@
 #include <raylib.h>
+#include "kdtree.h"
 
-typedef struct TiledMap {
-    int width;
-    int height;
-    char * tilelayout;
+#define CHUNK_CACHE_SIZE 32
+
+typedef char * Chunk;
+
+typedef struct CachedChunk {
+    long filePos;
+    Chunk chunk;
+} CachedChunk;
+
+typedef struct ChunkedTiledMap {
+    FILE * file;
+    int chunkWidth;
+    int chunkHeight;
     int tileSize;
     int atlasSize[2];
     int tileCount;
     Color * atlasData;
+    kdtree_t * chunkTree;
 } TiledMap;
 
 void textureFromPixels(Texture2D *texOut, Color *pixels, int width, int height);
+TiledMap openTiledMap(char * filename);
+CachedChunk * loadChunk(TiledMap *tiledMap, int x, int y);
+char getChunkedTile(TiledMap *tiledMap, int x, int y);
+char setChunkedTile(TiledMap * tiledMap, int x, int y, char value);
+CachedChunk * createChunk(TiledMap * tiledMap, int x, int y, Chunk chunk);
+void writeTiledMapHeader(TiledMap tiledMap);
+TiledMap openNewTiledMap(char * filename, Image atlas, int tileSize, int chunkWidth, int chunkHeight, int width, int height);
+void closeTiledMap(TiledMap * tiledMap);
 
-void setTiledMapTile(TiledMap tiledMap, int pos[2], char tile);
-
-char getTiledMapTile(TiledMap tiledMap, int pos[2]);
-
-TiledMap loadTiledMap(char * filename);
-
-void saveTiledMap(char * filename, TiledMap tiledMap);
-
-TiledMap newTiledMap(Image atlas, int tileSize, int width, int height);

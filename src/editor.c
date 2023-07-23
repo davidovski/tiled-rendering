@@ -23,7 +23,7 @@ void drawOverlay(Tiled tiled) {
 
 void modifyTile(Tiled *tiled, int tile) {
     setChunkedTile(&tiled->tiledMap, selectedTile[0], selectedTile[1], tile);
-    redrawTiledMap(*tiled);
+    redrawTile(*tiled, selectedTile[0], selectedTile[1]);
 }
 
 void setDrawMode(Tiled *tiled, int tile) {
@@ -34,10 +34,10 @@ void setDrawMode(Tiled *tiled, int tile) {
 
 void handleInputs(Tiled *tiled) {
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
-        setDrawMode(tiled, getChunkedTile(tiled->tiledMap, selectedTile[0], selectedTile[1]) + 1);
+        setDrawMode(tiled, getChunkedTile(&tiled->tiledMap, selectedTile[0], selectedTile[1]) + 1);
 
     if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
-        setDrawMode(tiled, getChunkedTile(tiled->tiledMap, selectedTile[0], selectedTile[1]) - 1);
+        setDrawMode(tiled, getChunkedTile(&tiled->tiledMap, selectedTile[0], selectedTile[1]) - 1);
 
     if (IsMouseButtonPressed(MOUSE_BUTTON_MIDDLE))
         setDrawMode(tiled, 0);
@@ -69,11 +69,11 @@ void update(Tiled *tiled) {
     handleInputs(tiled);
 }
 
-ChunkedTiledMap launchEditor(ChunkedTiledMap tiledMap) {
+void launchEditor(TiledMap * tiledMap) {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(SCREEN_W, SCREEN_H, "tiled");
 
-    Tiled tiled = initTiled(tiledMap);
+    Tiled tiled = initTiled(*tiledMap);
 
     while (!WindowShouldClose()) {
         update(&tiled);
@@ -92,7 +92,6 @@ ChunkedTiledMap launchEditor(ChunkedTiledMap tiledMap) {
     unloadTiled(&tiled);
 
     CloseWindow();
-    return tiledMap;
 }
 
 void printUsage(char *progname) {
@@ -104,8 +103,8 @@ int main(int argc, char *argv[]) {
     char * tiledFilePath;
     const char * atlasFilePath = NULL;
     int tileSize = 16;
-    int mapSize = 2;
-    int chunkSize = 2;
+    int mapSize = 1;
+    int chunkSize = 16;
 
     int flags, opt;
     while ((opt = getopt(argc, argv, "c:s:a:h")) != -1) {
@@ -126,7 +125,7 @@ int main(int argc, char *argv[]) {
 
     tiledFilePath = argv[optind];
 
-    ChunkedTiledMap tiledMap;
+    TiledMap tiledMap;
     if (access(tiledFilePath, F_OK)) {
         if (atlasFilePath == NULL) {
             fprintf(stderr, "Atlas file must be specified!\n");
@@ -139,6 +138,6 @@ int main(int argc, char *argv[]) {
         tiledMap = openTiledMap(tiledFilePath);
     }
 
-    launchEditor(tiledMap);
-    closeTiledMap(tiledMap);
+    launchEditor(&tiledMap);
+    closeTiledMap(&tiledMap);
 }

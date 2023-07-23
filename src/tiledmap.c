@@ -127,6 +127,11 @@ void commitChunk(TiledMap * tiledMap, CachedChunk * cached) {
 }
 
 void unloadChunk(TiledMap * tiledMap, CachedChunk * cached) {
+
+    // do not cache an unloaded chunk
+    if (cached->chunk == NULL)
+        return;
+
     // commit a chunk before unloading
     commitChunk(tiledMap, cached);
 
@@ -190,6 +195,9 @@ Tile getChunkedTile(TiledMap *tiledMap, int x, int y) {
     int inChunkY = y % tiledMap->chunkHeight;
     int chunkX = (x - inChunkX) / tiledMap->chunkWidth;
     int chunkY = (y - inChunkY) / tiledMap->chunkHeight;
+
+    if (x < 0 || y < 0)
+        return 0;
 
     CachedChunk * cached = loadChunk(tiledMap, chunkX, chunkY);
     if (cached == NULL)

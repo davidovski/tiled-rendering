@@ -6,10 +6,10 @@
 int alpha =0;
 
 void updateCamera(Tiled * tiled) {
-    if (IsKeyDown(KEY_UP)) tiled->offset.y += 4.0f / tiled->zoom;
-    if (IsKeyDown(KEY_DOWN)) tiled->offset.y -=  4.0f / tiled->zoom;
-    if (IsKeyDown(KEY_RIGHT)) tiled->offset.x -= 4.0f / tiled->zoom;
-    if (IsKeyDown(KEY_LEFT)) tiled->offset.x += 4.0f / tiled->zoom;
+    if (IsKeyDown(KEY_UP)) tiled->offset.y += 16.0f / tiled->zoom;
+    if (IsKeyDown(KEY_DOWN)) tiled->offset.y -=  16.0f / tiled->zoom;
+    if (IsKeyDown(KEY_RIGHT)) tiled->offset.x -= 16.0f / tiled->zoom;
+    if (IsKeyDown(KEY_LEFT)) tiled->offset.x += 16.0f / tiled->zoom;
 
     if (IsKeyDown(KEY_W)) tiled->zoom += tiled->zoom * 0.01f;
     if (IsKeyDown(KEY_S)) tiled->zoom -= tiled->zoom * 0.01f;
@@ -19,6 +19,9 @@ void updateCamera(Tiled * tiled) {
 
     tiled->renderOffset.x = tiled->offset.x - tiled->chunkOffset[0]*tiled->tiledMap.chunkWidth;
     tiled->renderOffset.y = tiled->offset.y - tiled->chunkOffset[1]*tiled->tiledMap.chunkHeight;
+
+    // TODO only do this when chunk offset has changed
+    // TODO unload chunks when they are no longer visible
     redrawTiledMap(*tiled);
 }
 

@@ -17,7 +17,7 @@ kdtree_t * kdtree_create(int x, int y, char * value) {
 kdtree_t * kdtree_insert_rec(kdtree_t **root, int x, int y, char * value, int depth) {
     if ((*root) == NULL)
         return *root = kdtree_create(x, y, value);
-    
+
     int e = x < (*root)->x;
     if (depth % 2 == 1) e = y < (*root)->y;
 

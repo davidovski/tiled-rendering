@@ -42,8 +42,8 @@ TiledMap openTiledMap(char * filename) {
     }
 
     FILE * file = tiledMap.file;
-    
-    // skip header 
+
+    // skip header
     fseek(file, 10, SEEK_CUR);
     // 4 bytes for int width
     readb((char *)&tiledMap.chunkWidth, 4, file);
@@ -61,7 +61,7 @@ TiledMap openTiledMap(char * filename) {
     size_t atlasSizeBytes = tiledMap.atlasSize[0]*tiledMap.tileSize*tiledMap.atlasSize[1]*tiledMap.tileSize*4;
     tiledMap.atlasData = malloc(atlasSizeBytes);
     fread(tiledMap.atlasData, atlasSizeBytes, (size_t) 1, file);
-    
+
     tiledMap.tileCount = tiledMap.atlasSize[0]*tiledMap.atlasSize[1] + 1;
 
     buildChunkTree(&tiledMap);
@@ -88,10 +88,10 @@ void unloadChunk(TiledMap * tiledMap, CachedChunk * cached) {
     // free memory
     free(cached->chunk);
     cached->chunk = NULL;
-    
+
 }
 
-//! load a chunk into the cache and return it 
+//! load a chunk into the cache and return it
 CachedChunk * loadChunk(TiledMap * tiledMap, int x, int y) {
     size_t chunkSizeBytes = tiledMap->chunkWidth * tiledMap->chunkHeight;
 
@@ -117,7 +117,7 @@ CachedChunk * createChunk(TiledMap *tiledMap, int x, int y, Chunk chunk) {
     fseek(tiledMap->file, 0, SEEK_END);
 
     // calculate position before writing
-    long pos = ftell(tiledMap->file) + 8; 
+    long pos = ftell(tiledMap->file) + 8;
     CachedChunk *cached = malloc(sizeof(CachedChunk));
     cached->filePos = pos;
     cached->chunk = chunk;
@@ -223,7 +223,7 @@ TiledMap openNewTiledMap(char * filename, Image atlas, int tileSize, int chunkWi
             createChunk(&tiledMap, x, y,  chunk);
         }
     }
-    
+
     // reopen the file in read+write mode
     fclose(tiledMap.file);
 

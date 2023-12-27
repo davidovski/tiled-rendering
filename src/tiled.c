@@ -74,6 +74,7 @@ void redrawTile(Tiled tiled, int x, int y) {
 
 void redrawTiledMap(Tiled tiled) {
     // TODO since we have to do this every time a chunk is loaded, maybe there is a better way
+    // TODO send chunks that are visible to shader and let shader figure out how to arrange / draw them
     int realX, realY;
     Tile v;
 

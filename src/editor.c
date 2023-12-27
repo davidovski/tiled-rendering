@@ -12,7 +12,7 @@ int mode = -1;
 
 void drawOverlay(Tiled tiled) {
     Vector2 screenPos = translateTiledScreenPosition(tiled, (Vector2){selectedTile[0], selectedTile[1]});
-    
+
     DrawRectangleLinesEx((Rectangle) {
                 screenPos.x,
                 screenPos.y,
@@ -117,7 +117,7 @@ int main(int argc, char *argv[]) {
                 atlasFilePath = optarg;
         }
     }
-    
+
     if (optind >= argc)
         printUsage(argv[0]);
 

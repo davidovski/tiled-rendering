@@ -26,7 +26,7 @@ typedef struct {
 
     RenderTexture2D tilemapTexture;
     RenderTexture2D targetTexture;
-    Shader shader; 
+    Shader shader;
 
     int zoomLoc;
     int offsetLoc;

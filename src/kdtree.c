@@ -1,7 +1,7 @@
 #include "kdtree.h"
 
 void print_node(kdtree_t *tree) {
-    printf("[%d,%d] %ld\n", tree->x, tree->y, (long)tree->value); 
+    printf("[%d,%d] %ld\n", tree->x, tree->y, (long)tree->value);
 }
 
 kdtree_t * kdtree_create(int x, int y, char * value) {
@@ -36,7 +36,7 @@ char * kdtree_search_rec(kdtree_t *root, int x, int y, int depth) {
 
     if (root->x == x && root->y == y)
         return root->value;
-    
+
     unsigned int r, p;
     if (depth % 2 == 0) {
         r = root->x;
@@ -66,7 +66,7 @@ char * kdtree_search(kdtree_t *root, int x, int y) {
 void kdtree_free(kdtree_t **root) {
     if ((*root)->left != NULL)
         kdtree_free(&(*root)->left);
-    
+
     if ((*root)->right != NULL)
         kdtree_free(&(*root)->right);
 
@@ -85,7 +85,7 @@ void kdtree_walk(kdtree_t *root, void (* consume)(kdtree_t*)) {
 int kdtree_size(kdtree_t *root) {
     if (root == NULL)
         return 0;
-    
+
     return 1 + kdtree_size(root->left) + kdtree_size(root->right);
 }
 
